@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { useBattleStore } from '../store/useBattleStore';
-import { connectStomp, getStompClient } from '../lib/stomp';
+import { getSocket, connectSocket } from '../lib/socket';
 import type { BattleListItem, CreateBattleRequest, MatchBattleRequest } from '../types';
 
 type TabStatus = 'WAITING' | 'IN_PROGRESS';
@@ -273,23 +273,19 @@ function MatchQueueModal({ onClose }: { onClose: () => void }) {
 
   useEffect(() => {
     if (matchingStatus !== 'queued') return;
+    const socket = getSocket();
+    if (!socket.connected) {
+      connectSocket();
+    }
 
-    let active = true;
-    connectStomp().then(() => {
-      if (!active) return;
-      const client = getStompClient();
-      const sub = client.subscribe('/user/queue/battle/match', (msg) => {
-        try {
-          const notification = JSON.parse(msg.body);
-          useBattleStore.getState().setMatchedBattle(notification.battleId);
-        } catch {
-          // ignore
-        }
-      });
-      return () => sub.unsubscribe();
-    });
+    const handleMatchFound = (data: { battleId: string }) => {
+      useBattleStore.getState().setMatchedBattle(data.battleId);
+    };
 
-    return () => { active = false; };
+    socket.on('matchFound', handleMatchFound);
+    return () => {
+      socket.off('matchFound', handleMatchFound);
+    };
   }, [matchingStatus]);
 
   const handleEnterQueue = async () => {
@@ -306,11 +302,7 @@ function MatchQueueModal({ onClose }: { onClose: () => void }) {
   };
 
   const handleCancel = async () => {
-    try {
-      await cancelMatchQueue();
-    } catch {
-      // ignore
-    }
+    await cancelMatchQueue();
   };
 
   const isQueued = matchingStatus === 'queued';
