@@ -122,9 +122,14 @@
 
 ### Backend — 배틀 매칭 완료 Socket.io 알림
 
-- [ ] `market.gateway.ts` 수정 — `handleConnection` 시 JWT 파싱 후 `user:{userId}` room join, `emitToUser(userId, event, data)` 메서드 추가
-- [ ] `BattleMatchingService.createMatchedBattle()` 수정 — 매칭된 각 참가자에게 EventEmitter `socket.user.matchFound` 이벤트 emit (`{ battleId }` 페이로드)
+- [x] `market.gateway.ts` 수정 — `handleConnection` 시 JWT 파싱 후 `user:{userId}` room join, `emitToUser(userId, event, data)` 메서드 추가
+- [x] `BattleMatchingService.createMatchedBattle()` 수정 — 매칭된 각 참가자에게 EventEmitter `socket.user.matchFound` 이벤트 emit (`{ battleId }` 페이로드)
 
 ### Frontend — BattlePage.tsx STOMP 잔재 제거
 
-- [ ] `BattlePage.tsx` `MatchQueueModal` 수정 — `connectStomp`/`getStompClient` import 제거, `getSocket()` + `socket.on('matchFound', ...)` 패턴으로 전환 (`useBattleStore.setMatchedBattle(battleId)` 호출)
+- [x] `BattlePage.tsx` `MatchQueueModal` 수정 — `connectStomp`/`getStompClient` import 제거, `getSocket()` + `socket.on('matchFound', ...)` 패턴으로 전환 (`useBattleStore.setMatchedBattle(battleId)` 호출)
+
+### Backend — OAuth2 패키지 설치 (선행 작업)
+
+- [ ] `npm install passport-google-oauth20 passport-kakao` + `npm install -D @types/passport-google-oauth20 @types/passport-kakao` 실행
+- [ ] `backend/.env` — `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `KAKAO_CLIENT_ID`, `KAKAO_CLIENT_SECRET`, `OAUTH2_REDIRECT_URI` 환경변수 추가 (`.env.example` 동기화)

@@ -23,8 +23,8 @@ export class User {
   @PrimaryGeneratedColumn('increment', { type: 'bigint' })
   id: number;
 
-  @Column({ type: 'varchar', nullable: false, unique: true, length: 500 })
-  email: string;
+  @Column({ type: 'varchar', nullable: true, unique: true, length: 500 })
+  email: string | null;
 
   @Column({ type: 'varchar', nullable: false, unique: true, length: 50 })
   nickname: string;
@@ -54,10 +54,13 @@ export class User {
   updatedAt: Date;
 
   encryptEmail(encryptor: AesEncryptor): void {
-    this.email = encryptor.encrypt(this.email);
+    if (this.email !== null) {
+      this.email = encryptor.encrypt(this.email);
+    }
   }
 
-  decryptEmail(encryptor: AesEncryptor): string {
+  decryptEmail(encryptor: AesEncryptor): string | null {
+    if (this.email === null) return null;
     return encryptor.decrypt(this.email);
   }
 }
