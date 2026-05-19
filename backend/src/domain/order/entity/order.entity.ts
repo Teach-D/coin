@@ -38,10 +38,10 @@ export class Order {
   @Column({ type: 'bigint', name: 'position_id', nullable: true })
   positionId: number | null;
 
-  @Column({ name: 'idempotency_key', length: 64, nullable: false, unique: true })
+  @Column({ type: 'varchar', name: 'idempotency_key', length: 64, nullable: false, unique: true })
   idempotencyKey: string;
 
-  @Column({ length: 30, nullable: false })
+  @Column({ type: 'varchar', length: 30, nullable: false })
   ticker: string;
 
   @Column({ type: 'varchar', name: 'order_type', length: 10, nullable: false })

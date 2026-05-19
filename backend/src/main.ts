@@ -24,7 +24,7 @@ async function bootstrap() {
   app.useGlobalFilters(new GlobalExceptionFilter());
   app.useWebSocketAdapter(new IoAdapter(app));
 
-  const port = process.env.PORT ?? 3000;
+  const port = process.env.PORT ?? 8080;
   await app.listen(port);
   console.log(`CoinBattle backend listening on port ${port}`);
 }

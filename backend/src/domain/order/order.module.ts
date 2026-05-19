@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Order } from './entity/order.entity';
 import { Position } from './entity/position.entity';
@@ -16,7 +16,7 @@ import { RankingModule } from '../ranking/ranking.module';
 @Module({
   imports: [
     TypeOrmModule.forFeature([Order, Position]),
-    UserModule,
+    forwardRef(() => UserModule),
     MarketModule,
     RankingModule,
   ],

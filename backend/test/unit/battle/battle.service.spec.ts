@@ -114,7 +114,7 @@ describe('BattleService', () => {
         battleRepo: { findById: jest.fn().mockResolvedValue(null) },
       });
 
-      await expect(service.executeJoinBattle(1, 'non-existent-uuid')).rejects.toThrow(
+      await expect((service as any).executeJoinBattle(1, 'non-existent-uuid')).rejects.toThrow(
         new CoinBattleException(ErrorCode.BATTLE_NOT_FOUND),
       );
     });
@@ -133,7 +133,7 @@ describe('BattleService', () => {
         sessionRepo: { existsByParticipantIdAndBattleId: jest.fn().mockResolvedValue(false) },
       });
 
-      await expect(service.executeJoinBattle(99, 'uuid-1')).rejects.toThrow(
+      await expect((service as any).executeJoinBattle(99, 'uuid-1')).rejects.toThrow(
         new CoinBattleException(ErrorCode.BATTLE_FULL),
       );
     });

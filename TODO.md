@@ -99,3 +99,17 @@
 - [x] `BattleRoom.tsx` 초대 버튼 추가 — `POST /api/battles/{battleId}/invite` 호출 후 초대 링크 클립보드 복사 + Web Share API 공유
 - [x] `JoinByInvitePage.tsx` 생성 — `/join/:inviteCode` 라우트, 자동 `POST /api/battles/join/{inviteCode}` 호출 후 BattleRoom으로 이동
 - [x] `App.tsx` `/join/:inviteCode` 라우트 추가
+
+## 2026-05-19
+
+### Backend — NestJS 빌드 & 기동 검증
+
+- [ ] `npm run build` 실행 — TypeScript 컴파일 오류 0건 확인 및 수정 (`backend/`)
+- [ ] `npm run start:dev` 실행 — 업비트 WebSocket 연결 로그 확인 후 `npm test` 로 단위 테스트 4종 (`order.service.spec.ts`, `position.entity.spec.ts`, `ranking.service.spec.ts`, `battle.service.spec.ts`) 통과 확인
+
+### Frontend — STOMP → Socket.io 전환 (NestJS 연동)
+
+- [ ] `frontend/src/lib/stomp.ts` 삭제 → `socket.ts` 신규 생성 — `io(import.meta.env.VITE_WS_URL)` 싱글턴, `connectSocket()` / `disconnectSocket()` / `getSocket()` 익스포트
+- [ ] `useTickerSubscription.ts` 수정 — STOMP `client.subscribe('/topic/coin/{ticker}')` → `socket.on('ticker', ...)` + `socket.emit('join', 'ticker:{ticker}')` 패턴 전환
+- [ ] `BattleRoom.tsx` 수정 — STOMP `StompSubscription` → Socket.io 이벤트 기반(`battleUpdate`, `RANK_UPDATE`, `notification`) 수신으로 전환
+- [ ] `frontend/.env` 수정 — `VITE_WS_URL=ws://localhost:3000` (NestJS 포트 3000, `/ws` 경로 제거)

@@ -1,3 +1,10 @@
+jest.mock('redlock', () => ({
+  __esModule: true,
+  default: jest.fn().mockImplementation(() => ({
+    acquire: jest.fn().mockResolvedValue({ release: jest.fn().mockResolvedValue(undefined) }),
+  })),
+}));
+
 import { OrderService } from 'src/domain/order/service/order.service';
 import { UserRepository } from 'src/domain/user/repository/user.repository';
 import { OrderRepository } from 'src/domain/order/repository/order.repository';

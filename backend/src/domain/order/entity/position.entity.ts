@@ -20,7 +20,7 @@ export class Position {
   @Column({ type: 'bigint', name: 'user_id', nullable: false })
   userId: number;
 
-  @Column({ length: 30, nullable: false })
+  @Column({ type: 'varchar', length: 30, nullable: false })
   ticker: string;
 
   @Column({ type: 'varchar', length: 10, nullable: false })

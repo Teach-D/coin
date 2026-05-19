@@ -8,7 +8,7 @@ import { MarketModule } from './domain/market/market.module';
 import { OrderModule } from './domain/order/order.module';
 import { BattleModule } from './domain/battle/battle.module';
 import { RankingModule } from './domain/ranking/ranking.module';
-import { RedisService } from './common/config/redis.config';
+import { RedisModule } from './common/config/redis.module';
 import { User } from './domain/user/entity/user.entity';
 import { Order } from './domain/order/entity/order.entity';
 import { Position } from './domain/order/entity/position.entity';
@@ -34,13 +34,14 @@ import { BattleSession } from './domain/battle/entity/battle-session.entity';
     }),
     EventEmitterModule.forRoot(),
     ScheduleModule.forRoot(),
+    RedisModule,
     UserModule,
     MarketModule,
     OrderModule,
     BattleModule,
     RankingModule,
   ],
-  providers: [RedisService],
-  exports: [RedisService],
+  providers: [],
+  exports: [],
 })
 export class AppModule {}

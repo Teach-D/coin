@@ -1,14 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import type { StompSubscription } from '@stomp/stompjs';
-import { connectStomp, getStompClient } from '../lib/stomp';
+import { connectSocket, getSocket } from '../lib/socket';
 import { useBattleStore } from '../store/useBattleStore';
 import { useAuthStore } from '../store/authStore';
 import { useBattleResult } from '../hooks/useBattleResult';
 import { BattleResultCard } from '../components/BattleResultCard';
 import { InviteButton } from '../components/battle/InviteButton';
-import type { BattleRankingEntry, BattleStompMessage, CardReadyNotification } from '../types';
+import type { BattleRankingEntry, CardReadyNotification } from '../types';
 
 function parseUserIdFromToken(token: string | null): number {
   if (!token) return 0;
@@ -352,8 +351,6 @@ export function BattleRoom() {
   const [isError, setIsError] = useState(false);
   const [showResultCard, setShowResultCard] = useState(false);
   const [cardImageUrl, setCardImageUrl] = useState<string | null>(null);
-  const subRef = useRef<StompSubscription | null>(null);
-  const notifSubRef = useRef<StompSubscription | null>(null);
 
   const currentUserId = parseUserIdFromToken(accessToken);
   const { data: battleResult } = useBattleResult(
@@ -371,67 +368,86 @@ export function BattleRoom() {
       .finally(() => setIsLoading(false));
   }, [battleId]);
 
+  const rankUpdateHandlerRef = useRef<((data: { rankings: BattleRankingEntry[] }) => void) | null>(null);
+  const battleStartedHandlerRef = useRef<(() => void) | null>(null);
+  const battleFinishedHandlerRef = useRef<(() => void) | null>(null);
+  const participantJoinedHandlerRef = useRef<(() => void) | null>(null);
+
   useEffect(() => {
     if (!battleId) return;
     let mounted = true;
 
-    connectStomp().then(() => {
+    const onRankUpdate = (data: { rankings: BattleRankingEntry[] }) => {
+      updateRankings(data.rankings);
+    };
+    const onBattleStarted = () => {
+      setBattleStatus('IN_PROGRESS');
+      fetchBattle(battleId);
+    };
+    const onBattleFinished = () => {
+      setBattleStatus('FINISHED');
+      fetchBattle(battleId);
+      setShowResultCard(true);
+    };
+    const onParticipantJoined = () => {
+      fetchBattle(battleId);
+    };
+
+    rankUpdateHandlerRef.current = onRankUpdate;
+    battleStartedHandlerRef.current = onBattleStarted;
+    battleFinishedHandlerRef.current = onBattleFinished;
+    participantJoinedHandlerRef.current = onParticipantJoined;
+
+    connectSocket().then(() => {
       if (!mounted) return;
-      const client = getStompClient();
-      subRef.current = client.subscribe(`/topic/battle/${battleId}`, (msg) => {
-        try {
-          const message: BattleStompMessage = JSON.parse(msg.body);
-          if (message.type === 'RANK_UPDATE' && message.data.rankings) {
-            updateRankings(message.data.rankings);
-          }
-          if (message.type === 'BATTLE_STARTED') {
-            setBattleStatus('IN_PROGRESS');
-            fetchBattle(battleId);
-          }
-          if (message.type === 'BATTLE_FINISHED') {
-            setBattleStatus('FINISHED');
-            fetchBattle(battleId);
-            setShowResultCard(true);
-          }
-          if (message.type === 'PARTICIPANT_JOINED') {
-            fetchBattle(battleId);
-          }
-        } catch {
-          // ignore malformed frames
-        }
-      });
+      const s = getSocket();
+      s.emit('joinBattleRoom', { battleId });
+      s.on('rankUpdate', onRankUpdate);
+      s.on('battleStarted', onBattleStarted);
+      s.on('battleFinished', onBattleFinished);
+      s.on('participantJoined', onParticipantJoined);
     });
 
     return () => {
       mounted = false;
-      subRef.current?.unsubscribe();
-      subRef.current = null;
+      const s = getSocket();
+      if (rankUpdateHandlerRef.current) s.off('rankUpdate', rankUpdateHandlerRef.current);
+      if (battleStartedHandlerRef.current) s.off('battleStarted', battleStartedHandlerRef.current);
+      if (battleFinishedHandlerRef.current) s.off('battleFinished', battleFinishedHandlerRef.current);
+      if (participantJoinedHandlerRef.current) s.off('participantJoined', participantJoinedHandlerRef.current);
+      rankUpdateHandlerRef.current = null;
+      battleStartedHandlerRef.current = null;
+      battleFinishedHandlerRef.current = null;
+      participantJoinedHandlerRef.current = null;
     };
   }, [battleId]);
 
+  const notifHandlerRef = useRef<((data: CardReadyNotification) => void) | null>(null);
+
   useEffect(() => {
     if (!battleId) return;
     let mounted = true;
 
-    connectStomp().then(() => {
+    const onNotification = (data: CardReadyNotification) => {
+      if (data.type === 'CARD_READY' && data.battleId === battleId) {
+        setCardImageUrl(data.cardImageUrl);
+      }
+    };
+    notifHandlerRef.current = onNotification;
+
+    connectSocket().then(() => {
       if (!mounted) return;
-      const client = getStompClient();
-      notifSubRef.current = client.subscribe('/user/queue/notification', (msg) => {
-        try {
-          const notification: CardReadyNotification = JSON.parse(msg.body);
-          if (notification.type === 'CARD_READY' && notification.battleId === battleId) {
-            setCardImageUrl(notification.cardImageUrl);
-          }
-        } catch {
-          // ignore malformed frames
-        }
-      });
+      const s = getSocket();
+      s.on('notification', onNotification);
     });
 
     return () => {
       mounted = false;
-      notifSubRef.current?.unsubscribe();
-      notifSubRef.current = null;
+      const s = getSocket();
+      if (notifHandlerRef.current) {
+        s.off('notification', notifHandlerRef.current);
+        notifHandlerRef.current = null;
+      }
     };
   }, [battleId]);
 

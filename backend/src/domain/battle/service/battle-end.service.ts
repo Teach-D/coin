@@ -114,6 +114,8 @@ export class BattleEndService {
       'battle.finished',
       new BattleFinishedEvent(battle.battleId, battle.winnerId, rankings, battleResult),
     );
+
+    this.eventEmitter.emit('socket.battle.finished', { battleId: battle.battleId });
   }
 
   async getBattleResult(battleId: string, currentUserId: number): Promise<BattleResultResponse> {
@@ -163,6 +165,25 @@ export class BattleEndService {
       participants,
       myResult,
     };
+  }
+
+  async calculateLiveRankings(battle: Battle): Promise<{ userId: number; currentValuation: number; rank: number }[]> {
+    const sessions = await this.battleSessionRepository.findByBattleId(battle.battleId);
+    const participantIds = sessions.map((s) => s.participantId);
+    const users = await this.userRepository.findAllByIds(participantIds);
+    const userMap = new Map(users.map((u) => [u.id, u]));
+
+    const valuations = await Promise.all(
+      sessions.map(async (session) => {
+        const user = userMap.get(session.participantId);
+        if (!user) return { userId: session.participantId, currentValuation: 0 };
+        const currentValuation = await this.calculateFinalValuation(user);
+        return { userId: session.participantId, currentValuation };
+      }),
+    );
+
+    const ranked = [...valuations].sort((a, b) => b.currentValuation - a.currentValuation);
+    return ranked.map((entry, index) => ({ ...entry, rank: index + 1 }));
   }
 
   private async calculateFinalValuation(user: User): Promise<number> {

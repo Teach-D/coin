@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { PassportModule } from '@nestjs/passport';
 import { JwtModule } from '@nestjs/jwt';
@@ -10,6 +10,7 @@ import { JwtStrategy } from './service/jwt.strategy';
 import { AuthController } from './controller/auth.controller';
 import { JwtProvider } from '../../common/util/jwt-provider';
 import { AesEncryptor } from '../../common/util/aes-encryptor';
+import { BattleModule } from '../battle/battle.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { AesEncryptor } from '../../common/util/aes-encryptor';
         },
       }),
     }),
+    forwardRef(() => BattleModule),
   ],
   providers: [UserRepository, UserService, JwtStrategy, JwtProvider, AesEncryptor],
   controllers: [AuthController],

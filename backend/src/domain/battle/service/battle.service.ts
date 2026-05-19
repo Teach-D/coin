@@ -1,6 +1,7 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import Redlock from 'redlock';
 import { v4 as uuidv4 } from 'uuid';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { CoinBattleException } from '../../../common/exception/coin-battle.exception';
 import { ErrorCode } from '../../../common/exception/error-code.enum';
 import { RedisService } from '../../../common/config/redis.config';
@@ -29,6 +30,7 @@ export class BattleService {
     private readonly battleSessionRepository: BattleSessionRepository,
     private readonly userRepository: UserRepository,
     private readonly redisService: RedisService,
+    @Optional() private readonly eventEmitter?: EventEmitter2,
   ) {
     this.redlock = new Redlock([this.redisService.client], { retryCount: 0 });
   }
@@ -78,7 +80,7 @@ export class BattleService {
     }
   }
 
-  async executeJoinBattle(userId: number, battleId: string): Promise<JoinBattleResponse> {
+  private async executeJoinBattle(userId: number, battleId: string): Promise<JoinBattleResponse> {
     const alreadyInThisBattle = await this.battleSessionRepository.existsByParticipantIdAndBattleId(userId, battleId);
     const activeStatuses = [BattleStatus.WAITING, BattleStatus.IN_PROGRESS];
 
@@ -104,10 +106,18 @@ export class BattleService {
       session.battleId = battleId;
       session.participantId = userId;
       await this.battleSessionRepository.save(session);
+      this.eventEmitter?.emit('socket.battle.participantJoined', {
+        battleId,
+        currentParticipants: battle.currentParticipants,
+      });
     }
 
     if (battle.canStart()) {
       battle.start();
+      this.eventEmitter?.emit('socket.battle.started', {
+        battleId,
+        startTime: battle.startTime,
+      });
     }
 
     await this.battleRepository.save(battle);

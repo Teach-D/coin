@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Battle } from './entity/battle.entity';
 import { BattleSession } from './entity/battle-session.entity';
@@ -23,7 +23,7 @@ import { RankingModule } from '../ranking/ranking.module';
 @Module({
   imports: [
     TypeOrmModule.forFeature([Battle, BattleSession]),
-    UserModule,
+    forwardRef(() => UserModule),
     MarketModule,
     OrderModule,
     RankingModule,

@@ -23,19 +23,19 @@ export class User {
   @PrimaryGeneratedColumn('increment', { type: 'bigint' })
   id: number;
 
-  @Column({ nullable: false, unique: true, length: 500 })
+  @Column({ type: 'varchar', nullable: false, unique: true, length: 500 })
   email: string;
 
-  @Column({ nullable: false, unique: true, length: 50 })
+  @Column({ type: 'varchar', nullable: false, unique: true, length: 50 })
   nickname: string;
 
-  @Column({ nullable: true, length: 500, name: 'profile_image_url' })
+  @Column({ type: 'varchar', nullable: true, length: 500, name: 'profile_image_url' })
   profileImageUrl: string | null;
 
   @Column({ type: 'varchar', length: 20, nullable: false })
   provider: AuthProvider;
 
-  @Column({ nullable: false, name: 'provider_id' })
+  @Column({ type: 'varchar', nullable: false, name: 'provider_id' })
   providerId: string;
 
   @Column({ type: 'varchar', length: 20, nullable: false, default: UserRole.ROLE_USER })
