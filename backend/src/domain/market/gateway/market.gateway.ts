@@ -9,6 +9,7 @@ import {
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { JwtService } from '@nestjs/jwt';
+import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
 import { TickerPubSubSubscriber } from '../service/ticker-pubsub.service';
 import { TickerResponse } from '../dto/ticker.dto';
 
@@ -27,6 +28,7 @@ export class MarketGateway implements OnGatewayInit, OnGatewayConnection {
   constructor(
     private readonly tickerSubscriber: TickerPubSubSubscriber,
     private readonly jwtService: JwtService,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   afterInit() {
@@ -43,8 +45,16 @@ export class MarketGateway implements OnGatewayInit, OnGatewayConnection {
       const userId = payload.sub;
       if (userId) client.join(`user:${userId}`);
     } catch {
-      client.disconnect(true);
     }
+  }
+
+  emitToUser<T>(userId: number, event: string, data: T): void {
+    this.server.to(`user:${userId}`).emit(event, data);
+  }
+
+  @OnEvent('socket.user.matchFound')
+  handleMatchFound(payload: { userId: number; battleId: string }) {
+    this.emitToUser(payload.userId, 'matchFound', { battleId: payload.battleId });
   }
 
   @SubscribeMessage('subscribeToTickers')

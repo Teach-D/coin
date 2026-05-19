@@ -77,14 +77,14 @@ export const useBattleStore = create<BattleStore>((set, get) => ({
   },
 
   enterMatchQueue: async (req) => {
-    const response = await api.post('/api/battles/match', req);
+    const response = await api.post('/api/battles/match/enqueue', req);
     set({ matchingStatus: 'queued', queueKey: response.data.data?.queueKey });
   },
 
   cancelMatchQueue: async () => {
     const { queueKey } = get();
     if (!queueKey) return;
-    await api.delete('/api/battles/match');
+    await api.post('/api/battles/match/dequeue');
     set({ matchingStatus: 'idle', queueKey: null });
   },
 

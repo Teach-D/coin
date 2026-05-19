@@ -104,12 +104,27 @@
 
 ### Backend — NestJS 빌드 & 기동 검증
 
-- [ ] `npm run build` 실행 — TypeScript 컴파일 오류 0건 확인 및 수정 (`backend/`)
-- [ ] `npm run start:dev` 실행 — 업비트 WebSocket 연결 로그 확인 후 `npm test` 로 단위 테스트 4종 (`order.service.spec.ts`, `position.entity.spec.ts`, `ranking.service.spec.ts`, `battle.service.spec.ts`) 통과 확인
+- [x] `npm run build` 실행 — TypeScript 컴파일 오류 0건 확인 및 수정 (`backend/`)
+- [x] `npm run start:dev` 실행 — 업비트 WebSocket 연결 로그 확인 후 `npm test` 로 단위 테스트 4종 (`order.service.spec.ts`, `position.entity.spec.ts`, `ranking.service.spec.ts`, `battle.service.spec.ts`) 통과 확인
 
 ### Frontend — STOMP → Socket.io 전환 (NestJS 연동)
 
-- [ ] `frontend/src/lib/stomp.ts` 삭제 → `socket.ts` 신규 생성 — `io(import.meta.env.VITE_WS_URL)` 싱글턴, `connectSocket()` / `disconnectSocket()` / `getSocket()` 익스포트
-- [ ] `useTickerSubscription.ts` 수정 — STOMP `client.subscribe('/topic/coin/{ticker}')` → `socket.on('ticker', ...)` + `socket.emit('join', 'ticker:{ticker}')` 패턴 전환
-- [ ] `BattleRoom.tsx` 수정 — STOMP `StompSubscription` → Socket.io 이벤트 기반(`battleUpdate`, `RANK_UPDATE`, `notification`) 수신으로 전환
-- [ ] `frontend/.env` 수정 — `VITE_WS_URL=ws://localhost:3000` (NestJS 포트 3000, `/ws` 경로 제거)
+- [x] `frontend/src/lib/stomp.ts` 삭제 → `socket.ts` 신규 생성 — `io(import.meta.env.VITE_WS_URL)` 싱글턴, `connectSocket()` / `disconnectSocket()` / `getSocket()` 익스포트
+- [x] `useTickerSubscription.ts` 수정 — STOMP `client.subscribe('/topic/coin/{ticker}')` → `socket.on('ticker', ...)` + `socket.emit('subscribeToTickers', { markets })` 패턴 전환
+- [x] `BattleRoom.tsx` 수정 — STOMP `StompSubscription` → Socket.io 이벤트 기반(`rankUpdate`, `battleStarted`, `battleFinished`, `notification`) 수신으로 전환
+- [x] `frontend/.env` 수정 — `VITE_WS_URL=http://localhost:3000` (NestJS 포트 3000, Socket.io http:// 프로토콜)
+
+### Backend — OAuth2 소셜 로그인 (Google / Kakao)
+
+- [ ] `google.strategy.ts` 생성 — `passport-google-oauth20` 기반 GoogleStrategy, `UserService.findOrCreateSocialUser()` 호출
+- [ ] `kakao.strategy.ts` 생성 — `passport-kakao` 기반 KakaoStrategy, `UserService.findOrCreateSocialUser()` 호출
+- [ ] `auth.controller.ts` OAuth2 엔드포인트 추가 — `GET /oauth2/authorization/:provider` (OAuth2Guard 적용) + 콜백 → `/oauth2/callback?accessToken=...&refreshToken=...` 리다이렉트
+
+### Backend — 배틀 매칭 완료 Socket.io 알림
+
+- [ ] `market.gateway.ts` 수정 — `handleConnection` 시 JWT 파싱 후 `user:{userId}` room join, `emitToUser(userId, event, data)` 메서드 추가
+- [ ] `BattleMatchingService.createMatchedBattle()` 수정 — 매칭된 각 참가자에게 EventEmitter `socket.user.matchFound` 이벤트 emit (`{ battleId }` 페이로드)
+
+### Frontend — BattlePage.tsx STOMP 잔재 제거
+
+- [ ] `BattlePage.tsx` `MatchQueueModal` 수정 — `connectStomp`/`getStompClient` import 제거, `getSocket()` + `socket.on('matchFound', ...)` 패턴으로 전환 (`useBattleStore.setMatchedBattle(battleId)` 호출)
