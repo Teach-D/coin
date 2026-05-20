@@ -127,4 +127,29 @@
 
 ### Frontend — BattlePage.tsx STOMP 잔재 제거
 
-- [ ] `BattlePage.tsx` `MatchQueueModal` 수정 — `connectStomp`/`getStompClient` import 제거, `getSocket()` + `socket.on('matchFound', ...)` 패턴으로 전환 (`useBattleStore.setMatchedBattle(battleId)` 호출)
+- [x] `BattlePage.tsx` `MatchQueueModal` 수정 — `connectStomp`/`getStompClient` import 제거, `getSocket()` + `socket.on('matchFound', ...)` 패턴으로 전환 (`useBattleStore.setMatchedBattle(battleId)` 호출)
+
+### Backend — OAuth2 패키지 설치 (선행 작업)
+
+- [ ] `npm install passport-google-oauth20 passport-kakao` + `npm install -D @types/passport-google-oauth20 @types/passport-kakao` 실행
+- [ ] `backend/.env` — `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `KAKAO_CLIENT_ID`, `KAKAO_CLIENT_SECRET`, `OAUTH2_REDIRECT_URI` 환경변수 추가 (`.env.example` 동기화)
+
+## 2026-05-20
+
+### Frontend — 전역 바텀 내비게이션 바
+
+- [ ] `BottomNavBar.tsx` 컴포넌트 생성 — 4탭 (시세 `/`, 배틀 `/battles`, 랭킹 `/ranking`, 마이페이지 `/profile`), 현재 경로 기준 활성 탭 강조
+- [ ] `App.tsx` 레이아웃 래퍼 적용 — `/coin/`, `/battles/:id`, `/result/` 딥링크 라우트에서 바텀 바 숨김 처리 (`useLocation` 기반)
+- [ ] `MarketListPage.tsx` 헤더 정리 — 프로필 아이콘 버튼 제거 (바텀 바 마이페이지 탭으로 대체), 헤더 단순화
+
+### Frontend — 로그인 페이지 리디자인
+
+- [ ] `LoginPage.tsx` 수정 — `gray-*` → `zinc-*` + `bg-[#0C0C0D]` 앱 전체 톤으로 통일, 브랜드 로고 스타일을 `MarketListPage` 헤더 gradient와 동일하게 맞춤
+
+### Frontend — BattleResultPage 완료 동선 개선
+
+- [ ] `BattleResultPage.tsx` 수정 — 승자 닉네임 강조 UI 추가 (1위에 왕관/뱃지), "다시 배틀" 버튼 (`/battles` 이동) + "시세 보기" 버튼 (`/` 이동) CTA 2개로 구성
+
+### Frontend — ProfilePage 포트폴리오 진입
+
+- [ ] `ProfilePage.tsx` 수정 — "내 포트폴리오" 섹션 카드 추가 (`ChevronRight` 아이콘 + `/portfolio` navigate), 시즌 기록 섹션 위에 배치
