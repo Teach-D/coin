@@ -19,7 +19,7 @@ export class UserService {
   ) {}
 
   async findOrCreateSocialUser(
-    email: string,
+    email: string | null,
     nickname: string,
     profileImageUrl: string | null,
     provider: AuthProvider,
@@ -29,7 +29,7 @@ export class UserService {
     if (existing) return existing;
 
     const user = new User();
-    user.email = this.aesEncryptor.encrypt(email);
+    user.email = email !== null ? this.aesEncryptor.encrypt(email) : null;
     user.nickname = await this.generateUniqueNickname(nickname);
     user.profileImageUrl = profileImageUrl;
     user.provider = provider;
@@ -62,7 +62,7 @@ export class UserService {
       userId: user.id,
       nickname: user.nickname,
       profileImageUrl: user.profileImageUrl,
-      email: this.aesEncryptor.decrypt(user.email),
+      email: user.email !== null ? this.aesEncryptor.decrypt(user.email) : null,
     };
   }
 
@@ -79,7 +79,7 @@ export class UserService {
       userId: user.id,
       nickname: user.nickname,
       profileImageUrl: user.profileImageUrl,
-      email: this.aesEncryptor.decrypt(user.email),
+      email: user.email !== null ? this.aesEncryptor.decrypt(user.email) : null,
     };
   }
 

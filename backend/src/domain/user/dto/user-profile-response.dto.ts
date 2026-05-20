@@ -2,7 +2,7 @@ export class UserProfileResponse {
   userId: number;
   nickname: string;
   profileImageUrl: string | null;
-  email: string;
+  email: string | null;
 }
 
 export class UserStatsResponse {

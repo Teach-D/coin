@@ -122,8 +122,8 @@
 
 ### Backend — 배틀 매칭 완료 Socket.io 알림
 
-- [ ] `market.gateway.ts` 수정 — `handleConnection` 시 JWT 파싱 후 `user:{userId}` room join, `emitToUser(userId, event, data)` 메서드 추가
-- [ ] `BattleMatchingService.createMatchedBattle()` 수정 — 매칭된 각 참가자에게 EventEmitter `socket.user.matchFound` 이벤트 emit (`{ battleId }` 페이로드)
+- [x] `market.gateway.ts` 수정 — `handleConnection` 시 JWT 파싱 후 `user:{userId}` room join, `emitToUser(userId, event, data)` 메서드 추가
+- [x] `BattleMatchingService.createMatchedBattle()` 수정 — 매칭된 각 참가자에게 EventEmitter `socket.user.matchFound` 이벤트 emit (`{ battleId }` 페이로드)
 
 ### Frontend — BattlePage.tsx STOMP 잔재 제거
 
@@ -138,18 +138,18 @@
 
 ### Frontend — 전역 바텀 내비게이션 바
 
-- [ ] `BottomNavBar.tsx` 컴포넌트 생성 — 4탭 (시세 `/`, 배틀 `/battles`, 랭킹 `/ranking`, 마이페이지 `/profile`), 현재 경로 기준 활성 탭 강조
-- [ ] `App.tsx` 레이아웃 래퍼 적용 — `/coin/`, `/battles/:id`, `/result/` 딥링크 라우트에서 바텀 바 숨김 처리 (`useLocation` 기반)
-- [ ] `MarketListPage.tsx` 헤더 정리 — 프로필 아이콘 버튼 제거 (바텀 바 마이페이지 탭으로 대체), 헤더 단순화
+- [x] `BottomNavBar.tsx` 컴포넌트 생성 — 4탭 (시세 `/`, 배틀 `/battles`, 랭킹 `/ranking`, 마이페이지 `/profile`), 현재 경로 기준 활성 탭 강조
+- [x] `App.tsx` 레이아웃 래퍼 적용 — `/coin/`, `/battles/:id`, `/result/` 딥링크 라우트에서 바텀 바 숨김 처리 (`useLocation` 기반)
+- [x] `MarketListPage.tsx` 헤더 정리 — 프로필 아이콘 버튼 제거 (바텀 바 마이페이지 탭으로 대체), 헤더 단순화
 
 ### Frontend — 로그인 페이지 리디자인
 
-- [ ] `LoginPage.tsx` 수정 — `gray-*` → `zinc-*` + `bg-[#0C0C0D]` 앱 전체 톤으로 통일, 브랜드 로고 스타일을 `MarketListPage` 헤더 gradient와 동일하게 맞춤
+- [x] `LoginPage.tsx` 수정 — `gray-*` → `zinc-*` + `bg-[#0C0C0D]` 앱 전체 톤으로 통일, 브랜드 로고 스타일을 `MarketListPage` 헤더 gradient와 동일하게 맞춤
 
 ### Frontend — BattleResultPage 완료 동선 개선
 
-- [ ] `BattleResultPage.tsx` 수정 — 승자 닉네임 강조 UI 추가 (1위에 왕관/뱃지), "다시 배틀" 버튼 (`/battles` 이동) + "시세 보기" 버튼 (`/` 이동) CTA 2개로 구성
+- [x] `BattleResultPage.tsx` 수정 — 승자 닉네임 강조 UI 추가 (1위에 왕관/뱃지), "다시 배틀" 버튼 (`/battles` 이동) + "시세 보기" 버튼 (`/` 이동) CTA 2개로 구성
 
 ### Frontend — ProfilePage 포트폴리오 진입
 
-- [ ] `ProfilePage.tsx` 수정 — "내 포트폴리오" 섹션 카드 추가 (`ChevronRight` 아이콘 + `/portfolio` navigate), 시즌 기록 섹션 위에 배치
+- [x] `ProfilePage.tsx` 수정 — "내 포트폴리오" 섹션 카드 추가 (`ChevronRight` 아이콘 + `/portfolio` navigate), 시즌 기록 섹션 위에 배치
