@@ -1,11 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
-import { UserCircle } from 'lucide-react';
 import { useMarketTickers } from '../hooks/useMarketTickers';
 import { useTickerSubscription } from '../hooks/useTickerSubscription';
 import { useTickerStore, type Ticker } from '../store/tickerStore';
-import { useAuthStore } from '../store/authStore';
 
 type ExchangeFilter = 'ALL' | 'UPBIT' | 'BINANCE';
 
@@ -130,8 +128,6 @@ export function MarketListPage() {
   const [exchangeFilter, setExchangeFilter] = useState<ExchangeFilter>('ALL');
   const { isLoading, isError, refetch } = useMarketTickers();
   const tickers = useTickerStore((s) => s.tickers);
-  const nickname = useAuthStore((s) => s.nickname);
-  const navigate = useNavigate();
 
   const filtered = Array.from(tickers.values())
     .filter((t) => {
@@ -170,19 +166,6 @@ export function MarketListPage() {
           {!isLoading && sorted.length > 0 && (
             <span className="text-xs text-zinc-600 ml-auto">{sorted.length}개</span>
           )}
-          <button
-            onClick={() => navigate('/profile')}
-            className="ml-2 flex items-center justify-center w-8 h-8 rounded-full bg-zinc-800 hover:bg-zinc-700 transition-colors shrink-0"
-            aria-label="프로필"
-          >
-            {nickname ? (
-              <span className="text-xs font-bold text-orange-400">
-                {nickname.charAt(0).toUpperCase()}
-              </span>
-            ) : (
-              <UserCircle size={18} className="text-zinc-400" />
-            )}
-          </button>
         </div>
       </header>
 

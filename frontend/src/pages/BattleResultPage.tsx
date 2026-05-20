@@ -1,4 +1,5 @@
 import { useNavigate, useParams } from 'react-router-dom';
+import { Crown, ChevronLeft } from 'lucide-react';
 import { useBattleResult } from '../hooks/useBattleResult';
 
 export function BattleResultPage() {
@@ -34,9 +35,10 @@ export function BattleResultPage() {
         <div className="max-w-2xl mx-auto flex items-center gap-3">
           <button
             onClick={() => navigate('/battles')}
-            className="w-7 h-7 rounded-lg bg-zinc-800 hover:bg-zinc-700 flex items-center justify-center text-zinc-400 hover:text-white transition-colors text-sm"
+            aria-label="뒤로가기"
+            className="w-7 h-7 rounded-lg bg-zinc-800 hover:bg-zinc-700 flex items-center justify-center text-zinc-400 hover:text-white transition-colors"
           >
-            ←
+            <ChevronLeft size={18} />
           </button>
           <h1 className="text-sm font-bold text-white">배틀 결과</h1>
         </div>
@@ -52,7 +54,18 @@ export function BattleResultPage() {
               <span className="text-sm font-bold w-8 text-center shrink-0 text-zinc-400">
                 {p.rank}위
               </span>
-              <span className="text-sm text-white flex-1 truncate ml-3">{p.nickname}</span>
+              <div className="flex items-center gap-1.5 flex-1 min-w-0 ml-3">
+                {p.rank === 1 && (
+                  <Crown size={14} className="text-yellow-400 shrink-0" />
+                )}
+                <span
+                  className={`text-sm truncate ${
+                    p.rank === 1 ? 'text-yellow-400 font-bold' : 'text-white'
+                  }`}
+                >
+                  {p.nickname}
+                </span>
+              </div>
               <div className="text-right shrink-0">
                 <p className={`text-sm font-bold font-mono ${p.profitRate >= 0 ? 'text-[#2DD4BF]' : 'text-red-400'}`}>
                   {p.profitRate >= 0 ? '+' : ''}{p.profitRate.toFixed(2)}%
@@ -62,12 +75,20 @@ export function BattleResultPage() {
           ))}
         </div>
 
-        <button
-          onClick={() => navigate('/battles')}
-          className="w-full rounded-2xl border border-zinc-700 py-3.5 text-sm font-semibold text-zinc-300 hover:border-zinc-500 hover:text-white transition-colors"
-        >
-          배틀 목록으로
-        </button>
+        <div className="flex gap-3">
+          <button
+            onClick={() => navigate('/battles')}
+            className="flex-1 rounded-2xl py-3.5 text-sm font-semibold text-white bg-orange-500 hover:bg-orange-400 transition-colors"
+          >
+            다시 배틀
+          </button>
+          <button
+            onClick={() => navigate('/')}
+            className="flex-1 rounded-2xl border border-zinc-700 py-3.5 text-sm font-semibold text-zinc-300 hover:border-zinc-500 hover:text-white transition-colors"
+          >
+            시세 보기
+          </button>
+        </div>
       </main>
     </div>
   );
