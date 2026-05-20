@@ -153,3 +153,7 @@
 ### Frontend — ProfilePage 포트폴리오 진입
 
 - [x] `ProfilePage.tsx` 수정 — "내 포트폴리오" 섹션 카드 추가 (`ChevronRight` 아이콘 + `/portfolio` navigate), 시즌 기록 섹션 위에 배치
+
+### Backend — WebSocket 재연결 안정성 개선
+
+- [ ] `upbit-websocket.client.ts` / `binance-websocket.client.ts` — `reconnectDelays` 사용 지점에 `Math.random() * 500` Jitter 추가, Thundering Herd 방지

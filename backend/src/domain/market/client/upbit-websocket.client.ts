@@ -65,9 +65,11 @@ export class UpbitWebSocketClient implements OnModuleInit, OnModuleDestroy {
   }
 
   private scheduleReconnect() {
+    if (this.reconnectTimeout) clearTimeout(this.reconnectTimeout);
     const delay = this.reconnectDelays[Math.min(this.attempt, this.reconnectDelays.length - 1)];
     this.attempt++;
-    this.reconnectTimeout = setTimeout(() => this.connect(), delay);
+    const jitter = Math.random() * 500;
+    this.reconnectTimeout = setTimeout(() => this.connect(), delay + jitter);
   }
 
   private async fetchKrwMarkets(): Promise<string[]> {
