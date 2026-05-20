@@ -1,3 +1,12 @@
+import { useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import { motion } from 'motion/react';
+import { ChevronLeft, ChevronRight, Pencil, Check, X, Trophy, Swords, Minus } from 'lucide-react';
+import { useUserProfile } from '../hooks/useUserProfile';
+import { useUserStats } from '../hooks/useUserStats';
+import { useUpdateProfile } from '../hooks/useUpdateProfile';
+import type { AxiosError } from 'axios';
+
 const COLORS = {
   background: '#0C0C0D',
   cardBg: '#18181B',
@@ -7,14 +16,11 @@ const COLORS = {
   loss: '#f87171',
 } as const;
 
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { motion } from 'motion/react';
-import { ChevronLeft, Pencil, Check, X, Trophy, Swords, Minus } from 'lucide-react';
-import { useUserProfile } from '../hooks/useUserProfile';
-import { useUserStats } from '../hooks/useUserStats';
-import { useUpdateProfile } from '../hooks/useUpdateProfile';
-import type { AxiosError } from 'axios';
+function maskEmail(email: string): string {
+  const [local, domain] = email.split('@');
+  if (!domain) return email;
+  return `${local.slice(0, 2)}***@${domain}`;
+}
 
 function SkeletonCard({ height = 80 }: { height?: number }) {
   return (
@@ -55,6 +61,8 @@ function StatCard({
   );
 }
 
+const MotionLink = motion.create(Link);
+
 export function ProfilePage() {
   const navigate = useNavigate();
   const { data: profile, isLoading: profileLoading } = useUserProfile();
@@ -77,7 +85,7 @@ export function ProfilePage() {
   }
 
   async function handleEditSave() {
-    if (!nickInput.trim() || nickInput.length < 2 || nickInput.length > 20) {
+    if (!nickInput.trim() || nickInput.trim().length < 2 || nickInput.trim().length > 20) {
       setNickError('닉네임은 2~20자 사이여야 합니다');
       return;
     }
@@ -186,7 +194,9 @@ export function ProfilePage() {
                     </button>
                   </div>
                 )}
-                <p className="text-xs text-zinc-500 mt-1 truncate">{profile?.email}</p>
+                <p className="text-xs text-zinc-500 mt-1 truncate">
+                  {profile?.email ? maskEmail(profile.email) : ''}
+                </p>
               </div>
             </div>
           </motion.div>
@@ -250,6 +260,25 @@ export function ProfilePage() {
             </div>
           </motion.div>
         )}
+
+        <p className="text-xs font-semibold tracking-widest uppercase text-zinc-500 pt-2">
+          내 자산
+        </p>
+
+        <MotionLink
+          to="/portfolio"
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="rounded-2xl p-4 border flex justify-between items-center hover:opacity-80 transition-opacity active:scale-[0.98]"
+          style={{ backgroundColor: COLORS.cardBg, borderColor: COLORS.cardBorder }}
+        >
+          <div className="space-y-0.5">
+            <p className="text-sm font-semibold text-white">포트폴리오</p>
+            <p className="text-xs text-zinc-500">잔고·포지션 확인</p>
+          </div>
+          <ChevronRight size={18} className="text-zinc-500 shrink-0" />
+        </MotionLink>
 
         <p className="text-xs font-semibold tracking-widest uppercase text-zinc-500 pt-2">
           시즌 기록
