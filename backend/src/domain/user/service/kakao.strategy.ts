@@ -3,7 +3,7 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Strategy as KakaoPassportStrategy } from 'passport-kakao';
 import { UserService } from './user.service';
-import { AuthProvider } from '../entity/user.entity';
+import { AuthProvider, User } from '../entity/user.entity';
 
 @Injectable()
 export class KakaoStrategy extends PassportStrategy(KakaoPassportStrategy, 'kakao') {
@@ -22,27 +22,13 @@ export class KakaoStrategy extends PassportStrategy(KakaoPassportStrategy, 'kaka
     _accessToken: string,
     _refreshToken: string,
     profile: any,
-    done: (err: Error | null, user?: any) => void,
-  ): Promise<void> {
-    try {
-      const kakaoAccount = profile._json?.kakao_account ?? {};
-      const properties = profile._json?.properties ?? {};
-
-      const email: string | null = kakaoAccount.email ?? null;
-      const nickname: string = properties.nickname ?? profile.displayName ?? '';
-      const profileImageUrl: string | null = properties.profile_image ?? null;
-      const providerId: string = String(profile.id);
-
-      const user = await this.userService.findOrCreateSocialUser(
-        email,
-        nickname,
-        profileImageUrl,
-        AuthProvider.KAKAO,
-        providerId,
-      );
-      done(null, user);
-    } catch (err) {
-      done(err as Error);
-    }
+  ): Promise<User> {
+    const kakaoAccount = profile._json?.kakao_account ?? {};
+    const properties = profile._json?.properties ?? {};
+    const email: string | null = kakaoAccount.email ?? null;
+    const nickname: string = properties.nickname ?? profile.displayName ?? '';
+    const profileImageUrl: string | null = properties.profile_image ?? null;
+    const providerId: string = String(profile.id);
+    return this.userService.findOrCreateSocialUser(email, nickname, profileImageUrl, AuthProvider.KAKAO, providerId);
   }
 }

@@ -24,26 +24,28 @@ export class OAuth2Controller {
   @Get('callback/google')
   @UseGuards(GoogleAuthGuard)
   googleCallback(@Req() req: Request, @Res() res: Response): void {
-    const user = req.user as User;
-    const tokens = this.userService.issueTokens(user);
-    const redirectUri = this.configService.get<string>('OAUTH2_REDIRECT_URI', '/login');
-    if (!this.isAllowedRedirectUri(redirectUri)) {
-      res.redirect('/login?error=oauth_failed');
+    if (res.headersSent) return;
+    const user = req.user as User | undefined;
+    if (!user) {
+      res.redirect('http://localhost:5173/login?error=oauth_failed');
       return;
     }
+    const tokens = this.userService.issueTokens(user);
+    const redirectUri = this.configService.get<string>('OAUTH2_REDIRECT_URI', 'http://localhost:5173/login');
     res.redirect(`${redirectUri}?accessToken=${tokens.accessToken}&refreshToken=${tokens.refreshToken}`);
   }
 
   @Get('callback/kakao')
   @UseGuards(KakaoAuthGuard)
   kakaoCallback(@Req() req: Request, @Res() res: Response): void {
-    const user = req.user as User;
-    const tokens = this.userService.issueTokens(user);
-    const redirectUri = this.configService.get<string>('OAUTH2_REDIRECT_URI', '/login');
-    if (!this.isAllowedRedirectUri(redirectUri)) {
-      res.redirect('/login?error=oauth_failed');
+    if (res.headersSent) return;
+    const user = req.user as User | undefined;
+    if (!user) {
+      res.redirect('http://localhost:5173/login?error=oauth_failed');
       return;
     }
+    const tokens = this.userService.issueTokens(user);
+    const redirectUri = this.configService.get<string>('OAUTH2_REDIRECT_URI', 'http://localhost:5173/login');
     res.redirect(`${redirectUri}?accessToken=${tokens.accessToken}&refreshToken=${tokens.refreshToken}`);
   }
 

@@ -3,7 +3,7 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Strategy as GooglePassportStrategy } from 'passport-google-oauth20';
 import { UserService } from './user.service';
-import { AuthProvider } from '../entity/user.entity';
+import { AuthProvider, User } from '../entity/user.entity';
 
 @Injectable()
 export class GoogleStrategy extends PassportStrategy(GooglePassportStrategy, 'google') {
@@ -23,24 +23,11 @@ export class GoogleStrategy extends PassportStrategy(GooglePassportStrategy, 'go
     _accessToken: string,
     _refreshToken: string,
     profile: any,
-    done: (err: Error | null, user?: any) => void,
-  ): Promise<void> {
-    try {
-      const email: string | null = profile.emails?.[0]?.value ?? null;
-      const nickname: string = profile.displayName ?? '';
-      const profileImageUrl: string | null = profile.photos?.[0]?.value ?? null;
-      const providerId: string = String(profile.id);
-
-      const user = await this.userService.findOrCreateSocialUser(
-        email,
-        nickname,
-        profileImageUrl,
-        AuthProvider.GOOGLE,
-        providerId,
-      );
-      done(null, user);
-    } catch (err) {
-      done(err as Error);
-    }
+  ): Promise<User> {
+    const email: string | null = profile.emails?.[0]?.value ?? null;
+    const nickname: string = profile.displayName ?? '';
+    const profileImageUrl: string | null = profile.photos?.[0]?.value ?? null;
+    const providerId: string = String(profile.id);
+    return this.userService.findOrCreateSocialUser(email, nickname, profileImageUrl, AuthProvider.GOOGLE, providerId);
   }
 }
