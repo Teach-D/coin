@@ -18,6 +18,8 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     const response = ctx.getResponse<Response>();
     const request = ctx.getRequest<Request>();
 
+    if (response.headersSent) return;
+
     if (exception instanceof CoinBattleException) {
       return response.status(exception.getStatus()).json(exception.getResponse());
     }
