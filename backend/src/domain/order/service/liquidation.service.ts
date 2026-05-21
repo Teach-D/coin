@@ -39,6 +39,7 @@ export class LiquidationService implements OnModuleInit {
   }
 
   private async onTicker(ticker: TickerResponse): Promise<void> {
+    const detectStart = Date.now();
     const currentPrice = Math.floor(ticker.tradePrice);
     const market = ticker.market;
 
@@ -48,13 +49,20 @@ export class LiquidationService implements OnModuleInit {
     ]);
 
     const candidates = [...longCandidates, ...shortCandidates];
+    const queryElapsed = Date.now() - detectStart;
+    this.logger.debug(`liq-index-query market=${market} candidates=${candidates.length} elapsed=${queryElapsed}ms`);
+
     if (candidates.length === 0) return;
 
     await Promise.all(
       candidates.map(async (positionId) => {
+        const closeStart = Date.now();
         try {
           const result = await this.orderService.forceClose(positionId, currentPrice);
-          this.logger.warn(`liquidated positionId=${positionId} ticker=${market} price=${currentPrice}`);
+          const closeElapsed = Date.now() - closeStart;
+          this.logger.warn(
+            `liquidated positionId=${positionId} ticker=${market} price=${currentPrice} closeMs=${closeElapsed}ms totalMs=${Date.now() - detectStart}ms`,
+          );
           this.eventEmitter.emit('socket.user.liquidation', {
             userId: result.userId,
             ticker: market,
