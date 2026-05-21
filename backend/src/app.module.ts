@@ -30,6 +30,7 @@ import { BattleSession } from './domain/battle/entity/battle-session.entity';
         entities: [User, Order, Position, Battle, BattleSession],
         synchronize: false,
         logging: configService.get('NODE_ENV') === 'local',
+        extra: { max: 20 },
       }),
     }),
     EventEmitterModule.forRoot(),
