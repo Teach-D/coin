@@ -7,10 +7,14 @@ import { PositionStatus } from '../entity/position.entity';
 import { OrderDirection } from '../entity/order.entity';
 import { OrderService } from './order.service';
 import { TickerResponse } from '../../market/dto/ticker.dto';
+import { Semaphore } from '../../../common/util/semaphore';
+
+const LIQUIDATION_CONCURRENCY = 10;
 
 @Injectable()
 export class LiquidationService implements OnModuleInit {
   private readonly logger = new Logger(LiquidationService.name);
+  private readonly semaphore = new Semaphore(LIQUIDATION_CONCURRENCY);
 
   constructor(
     private readonly positionRepository: PositionRepository,
@@ -55,23 +59,25 @@ export class LiquidationService implements OnModuleInit {
     if (candidates.length === 0) return;
 
     await Promise.all(
-      candidates.map(async (positionId) => {
-        const closeStart = Date.now();
-        try {
-          const result = await this.orderService.forceClose(positionId, currentPrice);
-          const closeElapsed = Date.now() - closeStart;
-          this.logger.warn(
-            `liquidated positionId=${positionId} ticker=${market} price=${currentPrice} closeMs=${closeElapsed}ms totalMs=${Date.now() - detectStart}ms`,
-          );
-          this.eventEmitter.emit('socket.user.liquidation', {
-            userId: result.userId,
-            ticker: market,
-            direction: result.direction,
-          });
-        } catch (e) {
-          this.logger.error(`forceClose failed positionId=${positionId}`, e);
-        }
-      }),
+      candidates.map((positionId) =>
+        this.semaphore.run(async () => {
+          const closeStart = Date.now();
+          try {
+            const result = await this.orderService.forceClose(positionId, currentPrice);
+            const closeElapsed = Date.now() - closeStart;
+            this.logger.warn(
+              `liquidated positionId=${positionId} ticker=${market} price=${currentPrice} closeMs=${closeElapsed}ms totalMs=${Date.now() - detectStart}ms`,
+            );
+            this.eventEmitter.emit('socket.user.liquidation', {
+              userId: result.userId,
+              ticker: market,
+              direction: result.direction,
+            });
+          } catch (e) {
+            this.logger.error(`forceClose failed positionId=${positionId}`, e);
+          }
+        }),
+      ),
     );
   }
 }

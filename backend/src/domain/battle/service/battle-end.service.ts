@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { Semaphore } from '../../../common/util/semaphore';
 import { CoinBattleException } from '../../../common/exception/coin-battle.exception';
 import { ErrorCode } from '../../../common/exception/error-code.enum';
 import { UserRepository } from '../../user/repository/user.repository';
@@ -26,6 +27,8 @@ interface SessionValuation {
 @Injectable()
 export class BattleEndService {
   private readonly logger = new Logger(BattleEndService.name);
+  private readonly finishValuationSemaphore = new Semaphore(5);
+  private readonly rankingValuationSemaphore = new Semaphore(3);
 
   constructor(
     private readonly battleRepository: BattleRepository,
@@ -64,12 +67,14 @@ export class BattleEndService {
     const userMap = new Map(users.map((u) => [u.id, u]));
 
     const valuations: SessionValuation[] = await Promise.all(
-      sessions.map(async (session) => {
-        const user = userMap.get(session.participantId);
-        if (!user) return { session, finalValuation: 0 };
-        const finalValuation = await this.calculateFinalValuation(user);
-        return { session, finalValuation };
-      }),
+      sessions.map((session) =>
+        this.finishValuationSemaphore.run(async () => {
+          const user = userMap.get(session.participantId);
+          if (!user) return { session, finalValuation: 0 };
+          const finalValuation = await this.calculateFinalValuation(user);
+          return { session, finalValuation };
+        }),
+      ),
     );
 
     const ranked = [...valuations].sort((a, b) => b.finalValuation - a.finalValuation);
@@ -174,12 +179,14 @@ export class BattleEndService {
     const userMap = new Map(users.map((u) => [u.id, u]));
 
     const valuations = await Promise.all(
-      sessions.map(async (session) => {
-        const user = userMap.get(session.participantId);
-        if (!user) return { userId: session.participantId, currentValuation: 0 };
-        const currentValuation = await this.calculateFinalValuation(user);
-        return { userId: session.participantId, currentValuation };
-      }),
+      sessions.map((session) =>
+        this.rankingValuationSemaphore.run(async () => {
+          const user = userMap.get(session.participantId);
+          if (!user) return { userId: session.participantId, currentValuation: 0 };
+          const currentValuation = await this.calculateFinalValuation(user);
+          return { userId: session.participantId, currentValuation };
+        }),
+      ),
     );
 
     const ranked = [...valuations].sort((a, b) => b.currentValuation - a.currentValuation);
