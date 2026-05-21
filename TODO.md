@@ -156,4 +156,15 @@
 
 ### Backend — WebSocket 재연결 안정성 개선
 
-- [ ] `upbit-websocket.client.ts` / `binance-websocket.client.ts` — `reconnectDelays` 사용 지점에 `Math.random() * 500` Jitter 추가, Thundering Herd 방지
+- [x] `upbit-websocket.client.ts` / `binance-websocket.client.ts` — `reconnectDelays` 사용 지점에 `Math.random() * 500` Jitter 추가, Thundering Herd 방지
+
+## 2026-05-21
+
+### Backend — LiquidationScheduler: DB 폴링 → Redis Sorted Set + 이벤트 기반 전환
+
+- [ ] `ticker-redis.repository.ts` — 청산 인덱스 메서드 3개 추가: `addLiquidationIndex(positionId, ticker, direction, liquidationPrice)` (ZADD), `removeLiquidationIndex(positionId, ticker, direction)` (ZREM), `getLiquidationCandidates(ticker, direction, currentPrice)` (ZRANGEBYSCORE)
+- [ ] `order.service.ts` `executeBuy()` / `upsertPosition()` 수정 — 포지션 저장 후 `addLiquidationIndex` 호출 (신규 생성 시 등록, 평균단가 갱신 시 기존 인덱스 재등록)
+- [ ] `order.service.ts` `executeSell()` / `forceClose()` 수정 — `position.close()` 직후 `removeLiquidationIndex` 호출
+- [ ] `liquidation.service.ts` 신규 생성 — `OnModuleInit`에서 기존 오픈 포지션 전체를 Redis Sorted Set에 재적재 (서버 재시작 대응), `TickerPubSubSubscriber.onMessage()` 콜백 등록 후 시세 수신 시 `getLiquidationCandidates` → `forceClose` 실행 + Socket.io 청산 알림
+- [ ] `liquidation.scheduler.ts` 폴링 제거 — `setInterval` / `checkLiquidations()` 삭제, `liquidation.service.ts`로 역할 이전
+- [ ] `order.module.ts` DI 업데이트 — `LiquidationService` provider 등록, 불필요해진 `LiquidationScheduler` 의존성 정리

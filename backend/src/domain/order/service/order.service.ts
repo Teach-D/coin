@@ -82,7 +82,9 @@ export class OrderService {
   }
 
   async executeBuy(userId: number, request: BuyOrderRequest): Promise<OrderResponse> {
-    return this.dataSource.transaction(async (manager) => {
+    let savedPosition: Position | null = null as Position | null;
+
+    const result = await this.dataSource.transaction(async (manager) => {
       if (await this.orderRepository.existsByIdempotencyKey(request.idempotencyKey)) {
         throw new CoinBattleException(ErrorCode.DUPLICATE_ORDER);
       }
@@ -115,6 +117,7 @@ export class OrderService {
         request.leverage,
         margin,
       );
+      savedPosition = position;
 
       const order = new Order();
       order.userId = userId;
@@ -141,10 +144,30 @@ export class OrderService {
       response.slippageRate = slippage.slippageRate;
       return response;
     });
+
+    if (savedPosition) {
+      await this.tickerRedisRepository.removeLiquidationIndex(
+        savedPosition.id,
+        request.ticker,
+        request.direction,
+      );
+      await this.tickerRedisRepository.addLiquidationIndex(
+        savedPosition.id,
+        request.ticker,
+        request.direction,
+        savedPosition.liquidationPrice(),
+      );
+    }
+
+    return result;
   }
 
   async executeSell(userId: number, request: SellOrderRequest): Promise<OrderResponse> {
-    return this.dataSource.transaction(async (manager) => {
+    let fullClosedPositionId: number | null = null;
+    let fullClosedTicker: string | null = null;
+    let fullClosedDirection: OrderDirection | null = null;
+
+    const result = await this.dataSource.transaction(async (manager) => {
       if (await this.orderRepository.existsByIdempotencyKey(request.idempotencyKey)) {
         throw new CoinBattleException(ErrorCode.DUPLICATE_ORDER);
       }
@@ -181,6 +204,9 @@ export class OrderService {
       const isFullClose = Math.abs(closeRatio - 1) < 1e-9;
       if (isFullClose) {
         position.close();
+        fullClosedPositionId = position.id;
+        fullClosedTicker = position.ticker;
+        fullClosedDirection = position.direction;
       } else {
         position.quantity = (positionQty - parseFloat(closeQuantity)).toFixed(BD_SCALE);
         position.margin -= closeMargin;
@@ -213,57 +239,76 @@ export class OrderService {
       response.slippageRate = slippage.slippageRate;
       return response;
     });
+
+    if (fullClosedPositionId !== null && fullClosedTicker !== null && fullClosedDirection !== null) {
+      await this.tickerRedisRepository.removeLiquidationIndex(
+        fullClosedPositionId,
+        fullClosedTicker,
+        fullClosedDirection,
+      );
+    }
+
+    return result;
   }
 
   async forceClose(positionId: number, liquidationPrice: number): Promise<OrderResponse> {
-    return this.dataSource.transaction(async (manager) => {
-      const position = await this.positionRepository.findById(positionId);
-      if (!position) throw new CoinBattleException(ErrorCode.POSITION_NOT_FOUND);
-      if (position.status === PositionStatus.CLOSED) throw new CoinBattleException(ErrorCode.POSITION_ALREADY_CLOSED);
+    const position = await this.positionRepository.findById(positionId);
+    if (!position) throw new CoinBattleException(ErrorCode.POSITION_NOT_FOUND);
+    if (position.status === PositionStatus.CLOSED) throw new CoinBattleException(ErrorCode.POSITION_ALREADY_CLOSED);
 
-      const idempotencyKey = `liquidation:${positionId}:${Date.now()}`;
-      const closeQuantity = position.quantity;
+    const { ticker, direction } = position;
+    const idempotencyKey = `liquidation:${positionId}`;
+
+    const saved = await this.dataSource.transaction(async (manager) => {
+      const lockedPosition = await this.positionRepository.findById(positionId);
+      if (!lockedPosition) throw new CoinBattleException(ErrorCode.POSITION_NOT_FOUND);
+      if (lockedPosition.status === PositionStatus.CLOSED) throw new CoinBattleException(ErrorCode.POSITION_ALREADY_CLOSED);
+
+      const closeQuantity = lockedPosition.quantity;
       const qty = parseFloat(closeQuantity);
 
-      const entryValue = qty * position.averagePrice;
+      const entryValue = qty * lockedPosition.averagePrice;
       const exitValue = qty * liquidationPrice;
 
       const rawPnl =
-        position.direction === OrderDirection.LONG
+        lockedPosition.direction === OrderDirection.LONG
           ? exitValue - entryValue
           : entryValue - exitValue;
-      const realizedPnl = Math.floor(rawPnl * position.leverage);
+      const realizedPnl = Math.floor(rawPnl * lockedPosition.leverage);
 
-      const user = await this.userRepository.findById(position.userId);
+      const user = await this.userRepository.findById(lockedPosition.userId);
       if (!user) throw new CoinBattleException(ErrorCode.USER_NOT_FOUND);
 
-      const returnAmount = Math.max(position.margin + realizedPnl, 0);
+      const returnAmount = Math.max(lockedPosition.margin + realizedPnl, 0);
       user.balance += returnAmount;
       await manager.save(user);
 
-      position.close();
-      await manager.save(position);
+      lockedPosition.close();
+      await manager.save(lockedPosition);
 
       const order = new Order();
-      order.userId = position.userId;
-      order.positionId = position.id;
+      order.userId = lockedPosition.userId;
+      order.positionId = lockedPosition.id;
       order.idempotencyKey = idempotencyKey;
-      order.ticker = position.ticker;
+      order.ticker = lockedPosition.ticker;
       order.orderType = OrderType.MARKET;
-      order.direction = position.direction;
+      order.direction = lockedPosition.direction;
       order.side = OrderSide.SELL;
       order.executedPrice = liquidationPrice;
-      order.executedAmount = position.margin;
+      order.executedAmount = lockedPosition.margin;
       order.executedQuantity = closeQuantity;
-      order.leverage = position.leverage;
+      order.leverage = lockedPosition.leverage;
       order.closeRatio = '1.0000';
       order.realizedPnl = realizedPnl;
       order.status = OrderStatus.FILLED;
-      const saved = await manager.save(order);
+      const orderSaved = await manager.save(order);
 
-      this.eventEmitter.emit('order.filled', new OrderFilledEvent(saved.id, position.userId, position.ticker, user.balance));
-      return OrderResponse.from(saved);
+      this.eventEmitter.emit('order.filled', new OrderFilledEvent(orderSaved.id, lockedPosition.userId, lockedPosition.ticker, user.balance));
+      return OrderResponse.from(orderSaved);
     });
+
+    await this.tickerRedisRepository.removeLiquidationIndex(positionId, ticker, direction);
+    return saved;
   }
 
   async getPortfolio(userId: number): Promise<PortfolioResponse> {
@@ -314,7 +359,9 @@ export class OrderService {
       existing.quantity = totalQty.toFixed(BD_SCALE);
       existing.averagePrice = newAveragePrice;
       existing.margin += addMargin;
-      return manager.save(existing);
+      const savedExisting = await manager.save(existing);
+      existing.id = savedExisting.id ?? existing.id;
+      return existing;
     }
 
     const position = new Position();
@@ -326,7 +373,9 @@ export class OrderService {
     position.leverage = leverage;
     position.margin = addMargin;
     position.status = PositionStatus.OPEN;
-    return manager.save(position);
+    const savedPosition = await manager.save(position);
+    position.id = savedPosition.id ?? position.id;
+    return position;
   }
 
   private async resolvePrice(ticker: string, orderType: OrderType, limitPrice?: number | null): Promise<number> {

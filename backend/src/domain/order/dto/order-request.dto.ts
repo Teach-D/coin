@@ -1,13 +1,15 @@
-import { IsEnum, IsInt, IsNotEmpty, IsNumber, IsOptional, IsString, Max, Min } from 'class-validator';
+import { IsEnum, IsInt, IsNotEmpty, IsNumber, IsOptional, IsString, Matches, Max, MaxLength, Min } from 'class-validator';
 import { OrderDirection, OrderType } from '../entity/order.entity';
 
 export class BuyOrderRequest {
   @IsNotEmpty()
   @IsString()
+  @MaxLength(64)
   idempotencyKey: string;
 
   @IsNotEmpty()
   @IsString()
+  @Matches(/^[A-Z]{2,10}-[A-Z]{2,10}$/)
   ticker: string;
 
   @IsEnum(OrderType)
@@ -34,6 +36,7 @@ export class BuyOrderRequest {
 export class SellOrderRequest {
   @IsNotEmpty()
   @IsString()
+  @MaxLength(64)
   idempotencyKey: string;
 
   @IsInt()

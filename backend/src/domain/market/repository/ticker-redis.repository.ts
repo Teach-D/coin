@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { RedisService } from '../../../common/config/redis.config';
 import { TickerResponse } from '../dto/ticker.dto';
+import { OrderDirection } from '../../order/entity/order.entity';
 
 const TICKER_TTL_SECONDS = 3;
 const MARKETS_KEY = 'coin:markets';
@@ -46,5 +47,53 @@ export class TickerRedisRepository {
   async findAll(): Promise<TickerResponse[]> {
     const markets = await this.redisService.client.lrange(MARKETS_KEY, 0, -1);
     return this.findByMarkets(markets);
+  }
+
+  private liqKey(ticker: string, direction: OrderDirection): string {
+    return `liq:${ticker}:${direction}`;
+  }
+
+  async addLiquidationIndex(
+    positionId: number,
+    ticker: string,
+    direction: OrderDirection,
+    liquidationPrice: number,
+  ): Promise<void> {
+    await this.redisService.client.zadd(
+      this.liqKey(ticker, direction),
+      liquidationPrice,
+      positionId.toString(),
+    );
+  }
+
+  async removeLiquidationIndex(
+    positionId: number,
+    ticker: string,
+    direction: OrderDirection,
+  ): Promise<void> {
+    await this.redisService.client.zrem(
+      this.liqKey(ticker, direction),
+      positionId.toString(),
+    );
+  }
+
+  async getLiquidationCandidates(
+    ticker: string,
+    direction: OrderDirection,
+    currentPrice: number,
+  ): Promise<number[]> {
+    const members =
+      direction === OrderDirection.LONG
+        ? await this.redisService.client.zrangebyscore(
+            this.liqKey(ticker, direction),
+            currentPrice,
+            '+inf',
+          )
+        : await this.redisService.client.zrangebyscore(
+            this.liqKey(ticker, direction),
+            0,
+            currentPrice,
+          );
+    return members.map((m) => parseInt(m, 10));
   }
 }
