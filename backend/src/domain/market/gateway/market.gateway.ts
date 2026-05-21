@@ -57,6 +57,16 @@ export class MarketGateway implements OnGatewayInit, OnGatewayConnection {
     this.emitToUser(payload.userId, 'matchFound', { battleId: payload.battleId });
   }
 
+  @OnEvent('socket.user.liquidation')
+  handleLiquidation(payload: { userId: number; ticker: string; direction: string }) {
+    this.emitToUser(payload.userId, 'notification', {
+      type: 'LIQUIDATION',
+      ticker: payload.ticker,
+      positionType: payload.direction,
+      liquidatedAt: new Date().toISOString(),
+    });
+  }
+
   @SubscribeMessage('subscribeToTickers')
   handleSubscribeToTickers(
     @ConnectedSocket() client: Socket,

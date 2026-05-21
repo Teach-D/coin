@@ -16,14 +16,31 @@ import { DataSource } from 'typeorm';
 import { CoinBattleException } from 'src/common/exception/coin-battle.exception';
 import { ErrorCode } from 'src/common/exception/error-code.enum';
 import { OrderType, OrderDirection } from 'src/domain/order/entity/order.entity';
-import { PositionStatus } from 'src/domain/order/entity/position.entity';
+import { Position, PositionStatus } from 'src/domain/order/entity/position.entity';
 import { User } from 'src/domain/user/entity/user.entity';
+
+function makePosition(overrides: Partial<Position> = {}): Position {
+  const p = new Position();
+  p.id = overrides.id ?? 1;
+  p.userId = overrides.userId ?? 1;
+  p.ticker = overrides.ticker ?? 'KRW-BTC';
+  p.direction = overrides.direction ?? OrderDirection.LONG;
+  p.averagePrice = overrides.averagePrice ?? 50_000_000;
+  p.leverage = overrides.leverage ?? 2;
+  p.margin = overrides.margin ?? 1_000_000;
+  p.quantity = overrides.quantity ?? '0.0200000000';
+  p.status = overrides.status ?? PositionStatus.OPEN;
+  p.version = overrides.version ?? 0;
+  p.openedAt = overrides.openedAt ?? new Date();
+  p.closedAt = overrides.closedAt ?? null;
+  return p;
+}
 
 function makeOrderService(overrides: Partial<{
   userRepo: Partial<UserRepository>;
   orderRepo: Partial<OrderRepository>;
   positionRepo: Partial<PositionRepository>;
-  tickerRepo: Partial<TickerRedisRepository>;
+  tickerRepo: Record<string, any>;
 }>= {}): OrderService {
   const userRepo = { findById: jest.fn(), save: jest.fn(), ...overrides.userRepo } as any;
   const orderRepo = {
@@ -43,6 +60,8 @@ function makeOrderService(overrides: Partial<{
   } as any;
   const tickerRepo = {
     findByMarket: jest.fn(),
+    addLiquidationIndex: jest.fn().mockResolvedValue(undefined),
+    removeLiquidationIndex: jest.fn().mockResolvedValue(undefined),
     ...overrides.tickerRepo,
   } as any;
   const redisService = { client: { get: jest.fn(), set: jest.fn() } } as any;
@@ -191,6 +210,188 @@ describe('OrderService', () => {
       await expect(service.buy(1, request)).rejects.toThrow(
         new CoinBattleException(ErrorCode.LIMIT_PRICE_REQUIRED),
       );
+    });
+  });
+
+  describe('청산 인덱스 등록 — executeBuy', () => {
+    it('executeBuy_완료_후_신규_포지션에_addLiquidationIndex_호출', async () => {
+      const user = { id: 1, balance: 5_000_000, version: 0 } as User;
+      const addLiquidationIndex = jest.fn().mockResolvedValue(undefined);
+
+      const service = makeOrderService({
+        userRepo: { findById: jest.fn().mockResolvedValue(user) },
+        tickerRepo: {
+          findByMarket: jest.fn().mockResolvedValue({ tradePrice: 50_000_000 }),
+          addLiquidationIndex,
+          removeLiquidationIndex: jest.fn().mockResolvedValue(undefined),
+        },
+      });
+
+      await service.executeBuy(1, {
+        idempotencyKey: 'liq-buy-1',
+        ticker: 'KRW-BTC',
+        orderType: OrderType.MARKET,
+        direction: OrderDirection.LONG,
+        amount: 500_000,
+        leverage: 2,
+      });
+
+      expect(addLiquidationIndex).toHaveBeenCalledTimes(1);
+      const [positionId, ticker, direction] = addLiquidationIndex.mock.calls[0];
+      expect(typeof positionId).toBe('number');
+      expect(ticker).toBe('KRW-BTC');
+      expect(direction).toBe(OrderDirection.LONG);
+    });
+
+    it('분할매수_기존_포지션_평균단가_갱신시_addLiquidationIndex_재호출로_score_갱신', async () => {
+      const user = { id: 1, balance: 10_000_000, version: 0 } as User;
+      const existingPosition = makePosition({
+        id: 5,
+        userId: 1,
+        ticker: 'KRW-BTC',
+        direction: OrderDirection.LONG,
+        averagePrice: 48_000_000,
+        leverage: 2,
+        margin: 500_000,
+        quantity: '0.0104166667',
+      });
+      const addLiquidationIndex = jest.fn().mockResolvedValue(undefined);
+
+      const service = makeOrderService({
+        userRepo: { findById: jest.fn().mockResolvedValue(user) },
+        tickerRepo: {
+          findByMarket: jest.fn().mockResolvedValue({ tradePrice: 52_000_000 }),
+          addLiquidationIndex,
+          removeLiquidationIndex: jest.fn().mockResolvedValue(undefined),
+        },
+        positionRepo: {
+          findByUserIdAndTickerAndDirectionAndStatus: jest.fn().mockResolvedValue(existingPosition),
+          findByUserIdAndStatus: jest.fn().mockResolvedValue([]),
+        },
+      });
+
+      await service.executeBuy(1, {
+        idempotencyKey: 'liq-buy-2',
+        ticker: 'KRW-BTC',
+        orderType: OrderType.MARKET,
+        direction: OrderDirection.LONG,
+        amount: 500_000,
+        leverage: 2,
+      });
+
+      expect(addLiquidationIndex).toHaveBeenCalledTimes(1);
+      const [positionId, ticker, direction] = addLiquidationIndex.mock.calls[0];
+      expect(positionId).toBe(5);
+      expect(ticker).toBe('KRW-BTC');
+      expect(direction).toBe(OrderDirection.LONG);
+    });
+  });
+
+  describe('청산 인덱스 제거 — executeSell', () => {
+    it('executeSell_전체청산_closeRatio_1_후_removeLiquidationIndex_호출', async () => {
+      const user = { id: 1, balance: 5_000_000, version: 0 } as User;
+      const position = makePosition({
+        id: 10,
+        userId: 1,
+        ticker: 'KRW-BTC',
+        direction: OrderDirection.LONG,
+        averagePrice: 50_000_000,
+        leverage: 2,
+        margin: 1_000_000,
+        quantity: '0.0200000000',
+      });
+      const removeLiquidationIndex = jest.fn().mockResolvedValue(undefined);
+
+      const service = makeOrderService({
+        userRepo: { findById: jest.fn().mockResolvedValue(user) },
+        tickerRepo: {
+          findByMarket: jest.fn().mockResolvedValue({ tradePrice: 55_000_000 }),
+          addLiquidationIndex: jest.fn().mockResolvedValue(undefined),
+          removeLiquidationIndex,
+        },
+        positionRepo: {
+          findById: jest.fn().mockResolvedValue(position),
+          findByUserIdAndStatus: jest.fn().mockResolvedValue([]),
+        },
+      });
+
+      await service.executeSell(1, {
+        idempotencyKey: 'liq-sell-1',
+        positionId: 10,
+        closeRatio: 1,
+      });
+
+      expect(removeLiquidationIndex).toHaveBeenCalledWith(10, 'KRW-BTC', OrderDirection.LONG);
+    });
+
+    it('executeSell_부분청산_closeRatio_미만_1_후_removeLiquidationIndex_미호출', async () => {
+      const user = { id: 1, balance: 5_000_000, version: 0 } as User;
+      const position = makePosition({
+        id: 11,
+        userId: 1,
+        ticker: 'KRW-BTC',
+        direction: OrderDirection.LONG,
+        averagePrice: 50_000_000,
+        leverage: 2,
+        margin: 1_000_000,
+        quantity: '0.0200000000',
+      });
+      const removeLiquidationIndex = jest.fn().mockResolvedValue(undefined);
+
+      const service = makeOrderService({
+        userRepo: { findById: jest.fn().mockResolvedValue(user) },
+        tickerRepo: {
+          findByMarket: jest.fn().mockResolvedValue({ tradePrice: 55_000_000 }),
+          addLiquidationIndex: jest.fn().mockResolvedValue(undefined),
+          removeLiquidationIndex,
+        },
+        positionRepo: {
+          findById: jest.fn().mockResolvedValue(position),
+          findByUserIdAndStatus: jest.fn().mockResolvedValue([]),
+        },
+      });
+
+      await service.executeSell(1, {
+        idempotencyKey: 'liq-sell-2',
+        positionId: 11,
+        closeRatio: 0.5,
+      });
+
+      expect(removeLiquidationIndex).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('청산 인덱스 제거 — forceClose', () => {
+    it('forceClose_완료_후_removeLiquidationIndex_호출', async () => {
+      const user = { id: 1, balance: 5_000_000, version: 0 } as User;
+      const position = makePosition({
+        id: 20,
+        userId: 1,
+        ticker: 'KRW-ETH',
+        direction: OrderDirection.SHORT,
+        averagePrice: 4_000_000,
+        leverage: 3,
+        margin: 1_000_000,
+        quantity: '0.7500000000',
+      });
+      const removeLiquidationIndex = jest.fn().mockResolvedValue(undefined);
+
+      const service = makeOrderService({
+        userRepo: { findById: jest.fn().mockResolvedValue(user) },
+        tickerRepo: {
+          findByMarket: jest.fn().mockResolvedValue({ tradePrice: 4_500_000 }),
+          addLiquidationIndex: jest.fn().mockResolvedValue(undefined),
+          removeLiquidationIndex,
+        },
+        positionRepo: {
+          findById: jest.fn().mockResolvedValue(position),
+          findByUserIdAndStatus: jest.fn().mockResolvedValue([]),
+        },
+      });
+
+      await service.forceClose(20, position.liquidationPrice());
+
+      expect(removeLiquidationIndex).toHaveBeenCalledWith(20, 'KRW-ETH', OrderDirection.SHORT);
     });
   });
 });

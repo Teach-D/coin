@@ -30,7 +30,11 @@ export class TickerPubSubSubscriber implements OnModuleInit, OnModuleDestroy {
     this.subscriber.on('message', (_channel, message) => {
       try {
         const ticker = JSON.parse(message) as TickerResponse;
-        this.messageHandlers.forEach((handler) => handler(ticker));
+        this.messageHandlers.forEach((handler) =>
+          Promise.resolve(handler(ticker)).catch((e) =>
+            this.logger.error('ticker handler error', e),
+          ),
+        );
       } catch (e) {
         this.logger.debug('ticker message parse error');
       }

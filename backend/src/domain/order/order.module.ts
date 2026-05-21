@@ -6,7 +6,7 @@ import { OrderRepository } from './repository/order.repository';
 import { PositionRepository } from './repository/position.repository';
 import { OrderService } from './service/order.service';
 import { FundingRateService } from './service/funding-rate.service';
-import { LiquidationScheduler } from './service/liquidation.scheduler';
+import { LiquidationService } from './service/liquidation.service';
 import { OrderFilledListener } from './listener/order-filled.listener';
 import { OrderController } from './controller/order.controller';
 import { UserModule } from '../user/user.module';
@@ -25,7 +25,7 @@ import { RankingModule } from '../ranking/ranking.module';
     PositionRepository,
     OrderService,
     FundingRateService,
-    LiquidationScheduler,
+    LiquidationService,
     OrderFilledListener,
   ],
   controllers: [OrderController],

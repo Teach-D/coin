@@ -28,6 +28,6 @@ import { MarketGateway } from './gateway/market.gateway';
     MarketGateway,
   ],
   controllers: [MarketController],
-  exports: [TickerRedisRepository, MarketService],
+  exports: [TickerRedisRepository, MarketService, TickerPubSubSubscriber],
 })
 export class MarketModule {}
