@@ -46,30 +46,37 @@ export class PositionResponse {
   userId: number;
   ticker: string;
   direction: OrderDirection;
-  quantity: string;
+  quantity: number;
   averagePrice: number;
   leverage: number;
   margin: number;
   status: PositionStatus;
   currentPrice: number;
   unrealizedPnl: number;
+  unrealizedPnlRate: number;
   evaluatedValue: number;
   liquidationPrice: number;
   openedAt: Date;
 
   static from(position: Position, currentPrice: number): PositionResponse {
+    const unrealizedPnl = position.unrealizedPnl(currentPrice);
+    const unrealizedPnlRate =
+      position.margin > 0
+        ? parseFloat(((unrealizedPnl / position.margin) * 100).toFixed(2))
+        : 0;
     return {
       positionId: position.id,
       userId: position.userId,
       ticker: position.ticker,
       direction: position.direction,
-      quantity: position.quantity,
+      quantity: parseFloat(position.quantity),
       averagePrice: position.averagePrice,
       leverage: position.leverage,
       margin: position.margin,
       status: position.status,
       currentPrice,
-      unrealizedPnl: position.unrealizedPnl(currentPrice),
+      unrealizedPnl,
+      unrealizedPnlRate,
       evaluatedValue: position.evaluatedValue(currentPrice),
       liquidationPrice: position.liquidationPrice(),
       openedAt: position.openedAt,
@@ -78,8 +85,13 @@ export class PositionResponse {
 }
 
 export class PortfolioResponse {
-  userId: number;
-  balance: number;
+  portfolio: {
+    userId: number;
+    balance: number;
+    totalAsset: number;
+    totalPnl: number;
+    totalPnlRate: number;
+  };
   positions: PositionResponse[];
 }
 

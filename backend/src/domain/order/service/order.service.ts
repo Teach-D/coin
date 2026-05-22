@@ -317,12 +317,32 @@ export class OrderService {
 
     const openPositions = await this.positionRepository.findByUserIdAndStatus(userId, PositionStatus.OPEN);
     const positions: PositionResponse[] = [];
+    let totalPnl = 0;
+    let totalMargin = 0;
+
     for (const pos of openPositions) {
       const ticker = await this.tickerRedisRepository.findByMarket(pos.ticker);
       const currentPrice = ticker?.tradePrice ? Math.floor(ticker.tradePrice) : pos.averagePrice;
-      positions.push(PositionResponse.from(pos, currentPrice));
+      const posResponse = PositionResponse.from(pos, currentPrice);
+      positions.push(posResponse);
+      totalPnl += posResponse.unrealizedPnl;
+      totalMargin += pos.margin;
     }
-    return { userId, balance: user.balance, positions };
+
+    const totalAsset = user.balance + totalMargin + totalPnl;
+    const totalPnlRate =
+      totalMargin > 0 ? parseFloat(((totalPnl / totalMargin) * 100).toFixed(2)) : 0;
+
+    return {
+      portfolio: {
+        userId,
+        balance: user.balance,
+        totalAsset,
+        totalPnl,
+        totalPnlRate,
+      },
+      positions,
+    };
   }
 
   async getOrderHistory(userId: number): Promise<OrderHistoryResponse[]> {

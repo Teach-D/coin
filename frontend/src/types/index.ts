@@ -39,7 +39,7 @@ export interface RecentOrder {
 export interface PortfolioResponse {
   portfolio: Portfolio;
   positions: Position[];
-  recentOrders: RecentOrder[];
+  recentOrders?: RecentOrder[];
 }
 
 export interface BuyOrderRequest {
