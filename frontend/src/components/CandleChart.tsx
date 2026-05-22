@@ -70,6 +70,18 @@ interface PendingStart {
   price: number;
 }
 
+interface LineDragState {
+  lineId: string;
+  initialMousePrice: number;
+  initialMouseTime: UTCTimestamp;
+  initialStartPrice: number;
+  initialStartTime: UTCTimestamp;
+  initialEndPrice: number;
+  initialEndTime: UTCTimestamp;
+  lineType: 'hline' | 'trendline';
+  didMove: boolean;
+}
+
 export interface CandleChartProps {
   candles: CandleData[];
   height?: number;
@@ -111,6 +123,7 @@ export function CandleChart({
 
   const draggingHandleRef = useRef<'start' | 'end' | null>(null);
   const justDraggedRef = useRef(false);
+  const lineDragRef = useRef<LineDragState | null>(null);
 
   useEffect(() => {
     drawingToolRef.current = drawingTool;
@@ -423,8 +436,6 @@ export function CandleChart({
 
   useEffect(() => {
     const onDocMouseMove = (e: MouseEvent) => {
-      if (!draggingHandleRef.current) return;
-
       const container = containerRef.current;
       const chart = chartRef.current;
       const series = seriesRef.current;
@@ -434,59 +445,126 @@ export function CandleChart({
       const offsetX = Math.max(0, Math.min(e.clientX - rect.left, rect.width));
       const offsetY = Math.max(0, Math.min(e.clientY - rect.top, rect.height));
 
-      const time = chart.timeScale().coordinateToTime(offsetX) as UTCTimestamp | null;
-      const price = series.coordinateToPrice(offsetY);
-      if (time === null || price === null) return;
+      if (draggingHandleRef.current) {
+        const time = chart.timeScale().coordinateToTime(offsetX) as UTCTimestamp | null;
+        const price = series.coordinateToPrice(offsetY);
+        if (time === null || price === null) return;
 
-      const target = draggingHandleRef.current;
-      const id = selectedLineIdRef.current;
+        const target = draggingHandleRef.current;
+        const id = selectedLineIdRef.current;
 
-      const lineEntry = drawnLinesRef.current.find(
-        (l) => l.data.id === id && l.type === 'trendline'
-      ) as { type: 'trendline'; data: TrendLineEntry } | undefined;
-      if (!lineEntry) return;
+        const lineEntry = drawnLinesRef.current.find(
+          (l) => l.data.id === id && l.type === 'trendline'
+        ) as { type: 'trendline'; data: TrendLineEntry } | undefined;
+        if (!lineEntry) return;
 
-      if (target === 'start') {
-        lineEntry.data.startTime = time;
-        lineEntry.data.startPrice = price;
-      } else {
-        lineEntry.data.endTime = time;
-        lineEntry.data.endPrice = price;
+        if (target === 'start') {
+          lineEntry.data.startTime = time;
+          lineEntry.data.startPrice = price;
+        } else {
+          lineEntry.data.endTime = time;
+          lineEntry.data.endPrice = price;
+        }
+
+        const { startTime, startPrice, endTime, endPrice } = lineEntry.data;
+        const [p1, p2] =
+          startTime <= endTime
+            ? [{ time: startTime, value: startPrice }, { time: endTime, value: endPrice }]
+            : [{ time: endTime, value: endPrice }, { time: startTime, value: startPrice }];
+
+        if (p1.time !== p2.time) {
+          lineEntry.data.series.setData([p1, p2]);
+        }
+
+        const sx = chart.timeScale().timeToCoordinate(lineEntry.data.startTime);
+        const sy = series.priceToCoordinate(lineEntry.data.startPrice);
+        const ex = chart.timeScale().timeToCoordinate(lineEntry.data.endTime);
+        const ey = series.priceToCoordinate(lineEntry.data.endPrice);
+
+        if (sx !== null && sy !== null && ex !== null && ey !== null) {
+          setHandles({
+            start: { x: sx, y: sy as number },
+            end: { x: ex, y: ey as number },
+          });
+          setDeleteButtonPos({
+            x: (sx + ex) / 2,
+            y: Math.min(sy as number, ey as number) - 20,
+          });
+        }
+        return;
       }
 
-      const { startTime, startPrice, endTime, endPrice } = lineEntry.data;
-      const [p1, p2] =
-        startTime <= endTime
-          ? [{ time: startTime, value: startPrice }, { time: endTime, value: endPrice }]
-          : [{ time: endTime, value: endPrice }, { time: startTime, value: startPrice }];
+      if (lineDragRef.current) {
+        const drag = lineDragRef.current;
 
-      if (p1.time !== p2.time) {
-        lineEntry.data.series.setData([p1, p2]);
-      }
+        const time = chart.timeScale().coordinateToTime(offsetX) as UTCTimestamp | null;
+        const price = series.coordinateToPrice(offsetY);
+        if (time === null || price === null) return;
 
-      const sx = chart.timeScale().timeToCoordinate(lineEntry.data.startTime);
-      const sy = series.priceToCoordinate(lineEntry.data.startPrice);
-      const ex = chart.timeScale().timeToCoordinate(lineEntry.data.endTime);
-      const ey = series.priceToCoordinate(lineEntry.data.endPrice);
+        const priceDelta = price - drag.initialMousePrice;
+        const timeDelta = (time - drag.initialMouseTime) as number;
 
-      if (sx !== null && sy !== null && ex !== null && ey !== null) {
-        setHandles({
-          start: { x: sx, y: sy as number },
-          end: { x: ex, y: ey as number },
-        });
-        setDeleteButtonPos({
-          x: (sx + ex) / 2,
-          y: Math.min(sy as number, ey as number) - 20,
-        });
+        drag.didMove = true;
+
+        const lineEntry = drawnLinesRef.current.find((l) => l.data.id === drag.lineId);
+        if (!lineEntry) return;
+
+        if (lineEntry.type === 'hline') {
+          const newPrice = drag.initialStartPrice + priceDelta;
+          lineEntry.data.price = newPrice;
+          lineEntry.data.priceLine.applyOptions({ price: newPrice });
+
+          const y = series.priceToCoordinate(newPrice);
+          if (y !== null) {
+            const x = container.clientWidth - 30;
+            setDeleteButtonPos({ x, y: y as number });
+          }
+        } else {
+          const newStartTime = (drag.initialStartTime + timeDelta) as UTCTimestamp;
+          const newStartPrice = drag.initialStartPrice + priceDelta;
+          const newEndTime = (drag.initialEndTime + timeDelta) as UTCTimestamp;
+          const newEndPrice = drag.initialEndPrice + priceDelta;
+
+          lineEntry.data.startTime = newStartTime;
+          lineEntry.data.startPrice = newStartPrice;
+          lineEntry.data.endTime = newEndTime;
+          lineEntry.data.endPrice = newEndPrice;
+
+          const [p1, p2] =
+            newStartTime <= newEndTime
+              ? [{ time: newStartTime, value: newStartPrice }, { time: newEndTime, value: newEndPrice }]
+              : [{ time: newEndTime, value: newEndPrice }, { time: newStartTime, value: newStartPrice }];
+
+          if (p1.time !== p2.time) lineEntry.data.series.setData([p1, p2]);
+
+          const sx = chart.timeScale().timeToCoordinate(newStartTime);
+          const sy = series.priceToCoordinate(newStartPrice);
+          const ex = chart.timeScale().timeToCoordinate(newEndTime);
+          const ey = series.priceToCoordinate(newEndPrice);
+
+          if (sx !== null && sy !== null && ex !== null && ey !== null) {
+            setHandles({ start: { x: sx, y: sy as number }, end: { x: ex, y: ey as number } });
+            setDeleteButtonPos({
+              x: (sx + ex) / 2,
+              y: Math.min(sy as number, ey as number) - 20,
+            });
+          }
+        }
+        return;
       }
     };
 
     const onDocMouseUp = () => {
-      if (draggingHandleRef.current) {
+      const wasHandleDrag = !!draggingHandleRef.current;
+      const wasLineDrag = !!(lineDragRef.current?.didMove);
+
+      if (wasHandleDrag || wasLineDrag) {
         justDraggedRef.current = true;
         setTimeout(() => { justDraggedRef.current = false; }, 150);
       }
+
       draggingHandleRef.current = null;
+      lineDragRef.current = null;
     };
 
     document.addEventListener('mousemove', onDocMouseMove);
@@ -628,21 +706,60 @@ export function CandleChart({
     []
   );
 
+  const handleMouseDown = useCallback(
+    (e: React.MouseEvent<HTMLDivElement>) => {
+      if (drawingToolRef.current !== 'cursor') return;
+      if (draggingHandleRef.current) return;
+
+      const nearest = findNearestLine(e.nativeEvent.offsetX, e.nativeEvent.offsetY);
+      if (!nearest) {
+        deselectLine();
+        return;
+      }
+
+      deselectLine();
+      selectLine(nearest.data.id, e.nativeEvent.offsetX, e.nativeEvent.offsetY);
+
+      const coords = getCoordinates(e.nativeEvent.offsetX, e.nativeEvent.offsetY);
+      if (!coords) return;
+
+      if (nearest.type === 'hline') {
+        lineDragRef.current = {
+          lineId: nearest.data.id,
+          initialMousePrice: coords.price,
+          initialMouseTime: coords.time,
+          initialStartPrice: nearest.data.price,
+          initialStartTime: 0 as UTCTimestamp,
+          initialEndPrice: 0,
+          initialEndTime: 0 as UTCTimestamp,
+          lineType: 'hline',
+          didMove: false,
+        };
+      } else {
+        lineDragRef.current = {
+          lineId: nearest.data.id,
+          initialMousePrice: coords.price,
+          initialMouseTime: coords.time,
+          initialStartPrice: nearest.data.startPrice,
+          initialStartTime: nearest.data.startTime,
+          initialEndPrice: nearest.data.endPrice,
+          initialEndTime: nearest.data.endTime,
+          lineType: 'trendline',
+          didMove: false,
+        };
+      }
+
+      e.preventDefault();
+    },
+    [findNearestLine, getCoordinates, deselectLine, selectLine]
+  );
+
   const handleClick = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
       if (justDraggedRef.current) return;
       const tool = drawingToolRef.current;
 
-      if (tool === 'cursor') {
-        const clicked = findNearestLine(e.nativeEvent.offsetX, e.nativeEvent.offsetY);
-        if (clicked) {
-          deselectLine();
-          selectLine(clicked.data.id, e.nativeEvent.offsetX, e.nativeEvent.offsetY);
-        } else {
-          deselectLine();
-        }
-        return;
-      }
+      if (tool === 'cursor') return;
 
       e.stopPropagation();
 
@@ -668,7 +785,7 @@ export function CandleChart({
         setPendingStart(null);
       }
     },
-    [getCoordinates, addHLine, addTrendLine, removePreviewSeries, findNearestLine, deselectLine, selectLine]
+    [getCoordinates, addHLine, addTrendLine, removePreviewSeries]
   );
 
   const handleDoubleClick = useCallback(
@@ -704,6 +821,7 @@ export function CandleChart({
   const handleMouseMove = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
       if (draggingHandleRef.current) return;
+      if (lineDragRef.current) return;
       if (drawingToolRef.current !== 'trendline') return;
       const pending = pendingStartRef.current;
       if (!pending) return;
@@ -757,6 +875,7 @@ export function CandleChart({
       ref={containerRef}
       style={{ height, cursor: cursorStyle }}
       className="w-full relative"
+      onMouseDown={handleMouseDown}
       onClick={handleClick}
       onDoubleClick={handleDoubleClick}
       onMouseMove={handleMouseMove}
