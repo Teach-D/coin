@@ -82,7 +82,7 @@ export function CoinDetailPage() {
   const [activeTab, setActiveTab] = useState<MobileTab>('order');
   const [candleUnit, setCandleUnit] = useState<CandleUnit>(1);
   const [candles, setCandles] = useState<CandleData[]>([]);
-  const [candlesLoading, setCandlesLoading] = useState(false);
+  const [candlesLoading, setCandlesLoading] = useState(true);
 
   const tickers = useTickerStore((s) => s.tickers);
   const tickerData = tickers.get(ticker);
