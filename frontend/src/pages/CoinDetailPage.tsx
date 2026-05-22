@@ -31,16 +31,18 @@ const CANDLE_UNITS = [
 // END CUSTOMIZATION
 // ============================================================================
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { ChevronLeft } from 'lucide-react';
 import { useTickerStore } from '../store/tickerStore';
 import { useTickerSubscription } from '../hooks/useTickerSubscription';
 import { useCandleSubscription } from '../hooks/useCandleSubscription';
+import { useDrawingTool } from '../hooks/useDrawingTool';
 import { OrderPanel } from '../components/OrderPanel';
 import { PortfolioWidget } from '../components/PortfolioWidget';
 import { CandleChart } from '../components/CandleChart';
+import { DrawingToolbar } from '../components/DrawingToolbar';
 import { api } from '../lib/api';
 import type { CandleData, CandleUnit, CandleResponse, ApiResponse } from '../types';
 
@@ -88,6 +90,28 @@ export function CoinDetailPage() {
   const [candlesLoading, setCandlesLoading] = useState(true);
   const [liveCandle, setLiveCandle] = useState<CandleData | undefined>();
 
+  const [chartHeight, setChartHeight] = useState(
+    typeof window !== 'undefined' && window.innerWidth < 768 ? 220 : 360
+  );
+
+  const { activeTool, setActiveTool } = useDrawingTool();
+  const clearTrendLinesFnRef = useRef<(() => void) | null>(null);
+  const clearAllFnRef = useRef<(() => void) | null>(null);
+
+  const handleRegisterClearTrendLines = useCallback((fn: () => void) => {
+    clearTrendLinesFnRef.current = fn;
+  }, []);
+
+  const handleRegisterClearAll = useCallback((fn: () => void) => {
+    clearAllFnRef.current = fn;
+  }, []);
+
+  useEffect(() => {
+    const handler = () => setChartHeight(window.innerWidth < 768 ? 220 : 360);
+    window.addEventListener('resize', handler);
+    return () => window.removeEventListener('resize', handler);
+  }, []);
+
   const tickers = useTickerStore((s) => s.tickers);
   const tickerData = tickers.get(ticker);
   const currentPrice = tickerData?.tradePrice ?? 0;
@@ -105,6 +129,14 @@ export function CoinDetailPage() {
   useEffect(() => {
     setLiveCandle(undefined);
   }, [ticker, candleUnit]);
+
+  useEffect(() => {
+    clearTrendLinesFnRef.current?.();
+  }, [candleUnit]);
+
+  useEffect(() => {
+    clearAllFnRef.current?.();
+  }, [ticker]);
 
   useEffect(() => {
     if (!ticker) return;
@@ -191,37 +223,37 @@ export function CoinDetailPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3 }}
         >
-          <div className="flex gap-1 border-b border-zinc-800 mb-0">
-            {CANDLE_UNITS.map(({ value, label }) => (
-              <button
-                key={value}
-                onClick={() => setCandleUnit(value as CandleUnit)}
-                className={`px-3 py-2 text-xs font-semibold transition-colors ${
-                  candleUnit === value ? COLORS.chartTabActive : COLORS.chartTabInactive
-                }`}
-              >
-                {label}
-              </button>
-            ))}
+          <div className="flex items-center justify-between border-b border-zinc-800 mb-0">
+            <div className="flex gap-1">
+              {CANDLE_UNITS.map(({ value, label }) => (
+                <button
+                  key={value}
+                  onClick={() => setCandleUnit(value as CandleUnit)}
+                  className={`px-3 py-2 text-xs font-semibold transition-colors ${
+                    candleUnit === value ? COLORS.chartTabActive : COLORS.chartTabInactive
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            <div className="pb-1 pr-1">
+              <DrawingToolbar activeTool={activeTool} onToolChange={setActiveTool} />
+            </div>
           </div>
 
           <div className="rounded-b-xl overflow-hidden">
             {candlesLoading ? (
-              <>
-                <ChartSkeleton height={360} />
-                <div className="md:hidden">
-                  <ChartSkeleton height={220} />
-                </div>
-              </>
+              <ChartSkeleton height={chartHeight} />
             ) : (
-              <>
-                <div className="hidden md:block">
-                  <CandleChart candles={candles} height={360} liveCandle={liveCandle} />
-                </div>
-                <div className="md:hidden">
-                  <CandleChart candles={candles} height={220} liveCandle={liveCandle} />
-                </div>
-              </>
+              <CandleChart
+                candles={candles}
+                height={chartHeight}
+                liveCandle={liveCandle}
+                drawingTool={activeTool}
+                onClearTrendLines={handleRegisterClearTrendLines}
+                onClearAll={handleRegisterClearAll}
+              />
             )}
           </div>
         </motion.div>

@@ -168,3 +168,14 @@
 - [ ] `liquidation.service.ts` 신규 생성 — `OnModuleInit`에서 기존 오픈 포지션 전체를 Redis Sorted Set에 재적재 (서버 재시작 대응), `TickerPubSubSubscriber.onMessage()` 콜백 등록 후 시세 수신 시 `getLiquidationCandidates` → `forceClose` 실행 + Socket.io 청산 알림
 - [ ] `liquidation.scheduler.ts` 폴링 제거 — `setInterval` / `checkLiquidations()` 삭제, `liquidation.service.ts`로 역할 이전
 - [ ] `order.module.ts` DI 업데이트 — `LiquidationService` provider 등록, 불필요해진 `LiquidationScheduler` 의존성 정리
+
+## 2026-05-22
+
+### Frontend — 캔들 차트 드로잉 도구 구현
+
+- [ ] `DrawingToolbar.tsx` 생성 — 커서/수평선/추세선 도구 선택 버튼 UI (active 상태 강조)
+- [ ] `useDrawingTool.ts` 생성 — 활성 도구 상태 + 그려진 선 목록 관리 (`useState` 기반)
+- [ ] `CandleChart.tsx` 수정 — `onMouseDown`/`onMouseMove`/`onMouseUp` 이벤트 핸들러 추가, `chart.timeScale().coordinateToTime()` + `series.coordinateToPrice()` 로 픽셀 → 가격/시간 변환
+- [ ] 수평선 구현 — `series.createPriceLine({ price, color, lineStyle, lineWidth })` API 활용, 클릭 한 번으로 생성
+- [ ] 추세선 구현 — `chart.addSeries(LineSeries)` 두 점 데이터로 직선 렌더링, 클릭 두 번으로 시작점/끝점 지정
+- [ ] `CoinDetailPage.tsx` 수정 — `DrawingToolbar` + `CandleChart` 통합, 그려진 선 삭제 버튼(더블클릭 또는 X 버튼) 추가
