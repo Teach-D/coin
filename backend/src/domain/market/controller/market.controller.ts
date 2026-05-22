@@ -18,4 +18,15 @@ export class MarketController {
     const result = await this.marketService.getTicker(market);
     return ApiResponse.ok(result);
   }
+
+  @Get(':market/candles')
+  async getCandles(
+    @Param('market') market: string,
+    @Query('unit') unit = '1',
+    @Query('count') count = '200',
+    @Query('pages') pages = '1',
+  ) {
+    const result = await this.marketService.getCandles(market, Number(unit), Number(count), Number(pages));
+    return ApiResponse.ok(result);
+  }
 }

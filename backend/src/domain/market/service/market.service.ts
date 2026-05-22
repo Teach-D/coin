@@ -36,6 +36,9 @@ export interface CandleResponse {
   totalCount: number;
 }
 
+const MAX_PAGES_BY_UNIT: Record<number, number> = { 1: 20, 3: 15, 5: 10, 15: 8, 60: 10, 240: 10 };
+const delay = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
+
 @Injectable()
 export class MarketService {
   private readonly pendingCandles = new Map<string, Promise<CandleResponse>>();
@@ -58,7 +61,8 @@ export class MarketService {
   }
 
   async getCandles(market: string, unit: number, count: number, pages: number): Promise<CandleResponse> {
-    const key = `${market}:${unit}:${count}:${pages}`;
+    const clampedPages = Math.min(pages, MAX_PAGES_BY_UNIT[unit] ?? 10);
+    const key = `${market}:${unit}:${count}:${clampedPages}`;
 
     const cached = this.candleCache.get(key);
     if (cached && cached.expiresAt > Date.now()) return cached.data;
@@ -66,7 +70,7 @@ export class MarketService {
     const existing = this.pendingCandles.get(key);
     if (existing) return existing;
 
-    const promise = this.fetchAllCandles(market, unit, count, pages)
+    const promise = this.fetchAllCandles(market, unit, count, clampedPages)
       .then((result) => {
         if (result.totalCount > 0) {
           this.candleCache.set(key, { data: result, expiresAt: Date.now() + unit * 60 * 1000 });
@@ -86,6 +90,7 @@ export class MarketService {
     let to: string | undefined;
 
     for (let i = 0; i < pages; i++) {
+      if (i > 0) await delay(100);
       const batch = await this.fetchCandlesBatch(market, unit, batchSize, to);
       if (batch.length === 0) break;
       allCandles.push(...batch);
@@ -118,7 +123,7 @@ export class MarketService {
       const result = await this.doFetchOnce(market, unit, count, to);
       if (result !== null) return result;
       if (attempt < retryDelays.length) {
-        await new Promise<void>((r) => setTimeout(r, retryDelays[attempt]));
+        await delay(retryDelays[attempt]);
       }
     }
     return [];
@@ -142,7 +147,7 @@ export class MarketService {
               }
               resolve(parsed as UpbitCandle[]);
             } catch {
-              resolve([]);
+              resolve(null);
             }
           });
         })
