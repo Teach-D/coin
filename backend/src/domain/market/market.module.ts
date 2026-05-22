@@ -4,6 +4,7 @@ import { ConfigService } from '@nestjs/config';
 import { TickerRedisRepository } from './repository/ticker-redis.repository';
 import { MarketService } from './service/market.service';
 import { TickerPubSubPublisher, TickerPubSubSubscriber } from './service/ticker-pubsub.service';
+import { TradeCandleService } from './service/trade-candle.service';
 import { UpbitWebSocketClient } from './client/upbit-websocket.client';
 import { BinanceWebSocketClient } from './client/binance-websocket.client';
 import { MarketController } from './controller/market.controller';
@@ -23,11 +24,12 @@ import { MarketGateway } from './gateway/market.gateway';
     MarketService,
     TickerPubSubPublisher,
     TickerPubSubSubscriber,
+    TradeCandleService,
     UpbitWebSocketClient,
     BinanceWebSocketClient,
     MarketGateway,
   ],
   controllers: [MarketController],
-  exports: [TickerRedisRepository, MarketService, TickerPubSubSubscriber],
+  exports: [TickerRedisRepository, MarketService, TickerPubSubSubscriber, TradeCandleService],
 })
 export class MarketModule {}

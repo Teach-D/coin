@@ -3,6 +3,7 @@ import * as https from 'https';
 import * as WebSocket from 'ws';
 import { TickerRedisRepository } from '../repository/ticker-redis.repository';
 import { TickerPubSubPublisher } from '../service/ticker-pubsub.service';
+import { TradeCandleService } from '../service/trade-candle.service';
 import { ChangeType, TickerResponse } from '../dto/ticker.dto';
 
 @Injectable()
@@ -17,6 +18,7 @@ export class UpbitWebSocketClient implements OnModuleInit, OnModuleDestroy {
   constructor(
     private readonly tickerRedisRepository: TickerRedisRepository,
     private readonly tickerPubSubPublisher: TickerPubSubPublisher,
+    private readonly tradeCandleService: TradeCandleService,
   ) {}
 
   onModuleInit() {
@@ -96,12 +98,32 @@ export class UpbitWebSocketClient implements OnModuleInit, OnModuleDestroy {
 
   private buildSubscribePayload(markets: string[]): string {
     const codesJson = markets.map((m) => `"${m}"`).join(',');
-    return `[{"ticket":"coinbattle-server"},{"type":"ticker","codes":[${codesJson}]}]`;
+    return `[{"ticket":"coinbattle-server"},{"type":"ticker","codes":[${codesJson}]},{"type":"trade","codes":[${codesJson}]}]`;
   }
 
   private handleMessage(raw: string) {
     try {
       const node = JSON.parse(raw);
+
+      if (node['type'] === 'trade') {
+        const market = String(node['code'] ?? '');
+        const price = Number(node['trade_price']);
+        const volume = Number(node['trade_volume']);
+        const timestamp = Number(node['trade_timestamp']);
+        if (
+          market.startsWith('KRW-') &&
+          market.length <= 20 &&
+          Number.isFinite(price) && price > 0 &&
+          Number.isFinite(volume) && volume >= 0 &&
+          Number.isFinite(timestamp) && timestamp > 0
+        ) {
+          for (const unit of [1, 3, 5, 10, 15, 30, 60, 240]) {
+            this.tradeCandleService.onTrade(market, unit, price, volume, timestamp);
+          }
+        }
+        return;
+      }
+
       const market = node['code'];
       if (!market) return;
 

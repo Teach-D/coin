@@ -31,12 +31,13 @@ const CANDLE_UNITS = [
 // END CUSTOMIZATION
 // ============================================================================
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { ChevronLeft } from 'lucide-react';
 import { useTickerStore } from '../store/tickerStore';
 import { useTickerSubscription } from '../hooks/useTickerSubscription';
+import { useCandleSubscription } from '../hooks/useCandleSubscription';
 import { OrderPanel } from '../components/OrderPanel';
 import { PortfolioWidget } from '../components/PortfolioWidget';
 import { CandleChart } from '../components/CandleChart';
@@ -85,6 +86,7 @@ export function CoinDetailPage() {
   const [candleUnit, setCandleUnit] = useState<CandleUnit>(1);
   const [candles, setCandles] = useState<CandleData[]>([]);
   const [candlesLoading, setCandlesLoading] = useState(true);
+  const [liveCandle, setLiveCandle] = useState<CandleData | undefined>();
 
   const tickers = useTickerStore((s) => s.tickers);
   const tickerData = tickers.get(ticker);
@@ -93,6 +95,16 @@ export function CoinDetailPage() {
   const change = tickerData?.change ?? 'EVEN';
 
   useTickerSubscription([ticker]);
+
+  const handleCandleUpdate = useCallback((candle: CandleData) => {
+    setLiveCandle(candle);
+  }, []);
+
+  useCandleSubscription(ticker, candleUnit, handleCandleUpdate);
+
+  useEffect(() => {
+    setLiveCandle(undefined);
+  }, [ticker, candleUnit]);
 
   useEffect(() => {
     if (!ticker) return;
@@ -204,10 +216,10 @@ export function CoinDetailPage() {
             ) : (
               <>
                 <div className="hidden md:block">
-                  <CandleChart candles={candles} height={360} />
+                  <CandleChart candles={candles} height={360} liveCandle={liveCandle} />
                 </div>
                 <div className="md:hidden">
-                  <CandleChart candles={candles} height={220} />
+                  <CandleChart candles={candles} height={220} liveCandle={liveCandle} />
                 </div>
               </>
             )}
