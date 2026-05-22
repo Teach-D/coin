@@ -1,18 +1,18 @@
-# Issue List — WebSocket 재연결 Jitter
+# Issue List — 캔들 차트 과거 데이터 확장
 
-> 생성일: 2026-05-20
+> 생성일: 2026-05-22
 > 총 이슈 수: 1개
 
 | 순서 | 번호 | 타입 | 제목 | 선행 이슈 | 브랜치 |
 |------|------|------|------|-----------|--------|
-| 1 | #8 | refactor | WebSocket 재연결 Jitter 추가 — Thundering Herd 방지 | 없음 | `refactor/websocket-jitter-8` |
+| 1 | #18 | feat | 캔들 차트 과거 데이터 확장 — pages 상한 조정 + rate limit 딜레이 | 없음 | `feat/candle-history-extension-18` |
 
 ---
 
 ## 작업 시작 방법
 
 ```bash
-git checkout refactor/websocket-jitter-8
+git checkout feat/candle-history-extension-18
 ```
 
 작업 완료 후:

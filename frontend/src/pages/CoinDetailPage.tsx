@@ -45,8 +45,8 @@ import { api } from '../lib/api';
 import type { CandleData, CandleUnit, CandleResponse, ApiResponse } from '../types';
 
 function getPagesForUnit(unit: CandleUnit): number {
-  if (unit === 5 || unit === 15) return 5;
-  return 10;
+  const map: Partial<Record<CandleUnit, number>> = { 1: 20, 3: 15, 5: 10, 15: 8, 60: 10, 240: 10 };
+  return map[unit] ?? 10;
 }
 
 type MobileTab = 'order' | 'position';
