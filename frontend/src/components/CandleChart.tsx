@@ -40,9 +40,10 @@ function formatKST(ts: number): string {
 interface CandleChartProps {
   candles: CandleData[];
   height?: number;
+  liveCandle?: CandleData;
 }
 
-export function CandleChart({ candles, height = 360 }: CandleChartProps) {
+export function CandleChart({ candles, height = 360, liveCandle }: CandleChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null);
@@ -133,6 +134,17 @@ export function CandleChart({ candles, height = 360 }: CandleChartProps) {
       seriesRef.current = null;
     };
   }, [height]);
+
+  useEffect(() => {
+    if (!seriesRef.current || !liveCandle) return;
+    seriesRef.current.update({
+      time: liveCandle.time as UTCTimestamp,
+      open: liveCandle.open,
+      high: liveCandle.high,
+      low: liveCandle.low,
+      close: liveCandle.close,
+    });
+  }, [liveCandle]);
 
   useEffect(() => {
     if (!seriesRef.current || candles.length === 0) return;

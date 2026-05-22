@@ -11,6 +11,7 @@ import { Server, Socket } from 'socket.io';
 import { JwtService } from '@nestjs/jwt';
 import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
 import { TickerPubSubSubscriber } from '../service/ticker-pubsub.service';
+import { CandleState } from '../service/trade-candle.service';
 import { TickerResponse } from '../dto/ticker.dto';
 
 @WebSocketGateway({
@@ -50,6 +51,11 @@ export class MarketGateway implements OnGatewayInit, OnGatewayConnection {
 
   emitToUser<T>(userId: number, event: string, data: T): void {
     this.server.to(`user:${userId}`).emit(event, data);
+  }
+
+  emitCandleUpdate(market: string, unit: number, candle: CandleState): void {
+    if (!this.server) return;
+    this.server.to(`ticker:${market}`).emit('candleUpdate', { market, unit, ...candle });
   }
 
   @OnEvent('socket.user.matchFound')
