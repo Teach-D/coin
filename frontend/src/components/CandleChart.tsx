@@ -27,7 +27,7 @@ import {
 } from 'lightweight-charts';
 import type { CandleData } from '../types';
 
-function formatUTC(ts: number): string {
+function formatKST(ts: number): string {
   const d = new Date(ts * 1000);
   const yyyy = d.getUTCFullYear();
   const mm = String(d.getUTCMonth() + 1).padStart(2, '0');
@@ -106,7 +106,7 @@ export function CandleChart({ candles, height = 360 }: CandleChartProps) {
       const containerWidth = container.clientWidth;
       const halfWidth = 55;
       const x = Math.max(halfWidth, Math.min(param.point.x, containerWidth - halfWidth));
-      el.textContent = formatUTC(param.time as number);
+      el.textContent = formatKST(param.time as number);
       el.style.left = `${x}px`;
       el.style.display = 'block';
     });

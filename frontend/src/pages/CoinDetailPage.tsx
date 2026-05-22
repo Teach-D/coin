@@ -63,8 +63,10 @@ function getCoinSymbol(market: string): string {
   return market.replace('KRW-', '');
 }
 
+const KST_OFFSET_SECONDS = 9 * 3600;
+
 function toUnixSeconds(utcString: string): number {
-  return Math.floor(new Date(utcString + 'Z').getTime() / 1000);
+  return Math.floor(new Date(utcString + 'Z').getTime() / 1000) + KST_OFFSET_SECONDS;
 }
 
 function ChartSkeleton({ height }: { height: number }) {
