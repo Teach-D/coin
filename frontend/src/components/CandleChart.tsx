@@ -111,11 +111,18 @@ export function CandleChart({ candles, height = 360 }: CandleChartProps) {
       el.style.display = 'block';
     });
 
+    // width=0 으로 생성된 경우(display:none 컨테이너 등) ResizeObserver가
+    // 처음 non-zero 폭을 감지할 때 fitContent를 재호출해 데이터를 보정한다.
+    let lastWidth = containerRef.current.clientWidth;
     const resizeObserver = new ResizeObserver((entries) => {
       const entry = entries[0];
-      if (entry && chartRef.current) {
-        chartRef.current.applyOptions({ width: entry.contentRect.width });
+      if (!entry || !chartRef.current) return;
+      const newWidth = entry.contentRect.width;
+      chartRef.current.applyOptions({ width: newWidth });
+      if (lastWidth === 0 && newWidth > 0 && seriesRef.current) {
+        chartRef.current.timeScale().fitContent();
       }
+      lastWidth = newWidth;
     });
     resizeObserver.observe(containerRef.current);
 
@@ -130,8 +137,14 @@ export function CandleChart({ candles, height = 360 }: CandleChartProps) {
   useEffect(() => {
     if (!seriesRef.current || candles.length === 0) return;
 
+    const seen = new Set<number>();
     const sorted = [...candles]
       .sort((a, b) => a.time - b.time)
+      .filter((c) => {
+        if (!isFinite(c.time) || seen.has(c.time)) return false;
+        seen.add(c.time);
+        return true;
+      })
       .map((c) => ({
         time: c.time as UTCTimestamp,
         open: c.open,
@@ -139,6 +152,8 @@ export function CandleChart({ candles, height = 360 }: CandleChartProps) {
         low: c.low,
         close: c.close,
       }));
+
+    if (sorted.length === 0) return;
 
     seriesRef.current.setData(sorted);
     chartRef.current?.timeScale().fitContent();
