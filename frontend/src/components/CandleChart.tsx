@@ -11,8 +11,8 @@ const CHART_COLORS = {
   candleRise: '#2DD4BF',
   candleFall: '#f87171',
   hline: '#facc15',
-  trendline: '#94a3b8',
-  trendlinePreview: 'rgba(148, 163, 184, 0.5)',
+  trendline: '#ffffff',
+  trendlinePreview: 'rgba(255,255,255,0.5)',
 } as const;
 
 const MAX_LINES = 20;
@@ -97,10 +97,13 @@ export function CandleChart({
   const rafRef = useRef<number | null>(null);
   const drawingToolRef = useRef<DrawingTool>(drawingTool);
   const lineIdCounterRef = useRef(0);
+  const selectedLineIdRef = useRef<string | null>(null);
 
   const nextId = useCallback(() => `line-${++lineIdCounterRef.current}`, []);
 
   const [pendingStart, setPendingStart] = useState<PendingStart | null>(null);
+  const [selectedLineId, setSelectedLineId] = useState<string | null>(null);
+  const [deleteButtonPos, setDeleteButtonPos] = useState<{ x: number; y: number } | null>(null);
 
   useEffect(() => {
     drawingToolRef.current = drawingTool;
@@ -109,6 +112,10 @@ export function CandleChart({
   useEffect(() => {
     pendingStartRef.current = pendingStart;
   }, [pendingStart]);
+
+  useEffect(() => {
+    selectedLineIdRef.current = selectedLineId;
+  }, [selectedLineId]);
 
   const removePreviewSeries = useCallback(() => {
     if (previewSeriesRef.current && chartRef.current) {
@@ -136,6 +143,8 @@ export function CandleChart({
     });
     removePreviewSeries();
     setPendingStart(null);
+    setSelectedLineId(null);
+    setDeleteButtonPos(null);
   }, [removePreviewSeries]);
 
   const clearAll = useCallback(() => {
@@ -158,6 +167,8 @@ export function CandleChart({
     drawnLinesRef.current = [];
     removePreviewSeries();
     setPendingStart(null);
+    setSelectedLineId(null);
+    setDeleteButtonPos(null);
   }, [removePreviewSeries]);
 
   useEffect(() => {
@@ -295,16 +306,6 @@ export function CandleChart({
     chartRef.current?.timeScale().fitContent();
   }, [candles]);
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape') return;
-      removePreviewSeries();
-      setPendingStart(null);
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [removePreviewSeries]);
-
   const getCoordinates = useCallback(
     (offsetX: number, offsetY: number): { time: UTCTimestamp; price: number } | null => {
       const chart = chartRef.current;
@@ -319,6 +320,78 @@ export function CandleChart({
     },
     []
   );
+
+  const deselectLine = useCallback(() => {
+    const id = selectedLineIdRef.current;
+    if (id) {
+      const line = drawnLinesRef.current.find((l) => l.data.id === id);
+      if (line?.type === 'hline') {
+        line.data.priceLine.applyOptions({ color: CHART_COLORS.hline });
+      }
+      if (line?.type === 'trendline') {
+        line.data.series.applyOptions({ color: CHART_COLORS.trendline });
+      }
+    }
+    setSelectedLineId(null);
+    setDeleteButtonPos(null);
+  }, []);
+
+  const selectLine = useCallback(
+    (id: string, clickX: number, clickY: number) => {
+      const line = drawnLinesRef.current.find((l) => l.data.id === id);
+      if (!line) return;
+
+      setSelectedLineId(id);
+
+      if (line.type === 'hline') {
+        line.data.priceLine.applyOptions({ color: '#f97316' });
+        const y = seriesRef.current?.priceToCoordinate(line.data.price) ?? clickY;
+        const x = containerRef.current?.clientWidth ? containerRef.current.clientWidth - 30 : clickX;
+        setDeleteButtonPos({ x, y: y as number });
+      }
+
+      if (line.type === 'trendline') {
+        line.data.series.applyOptions({ color: '#f97316' });
+        setDeleteButtonPos({ x: clickX, y: clickY - 16 });
+      }
+    },
+    []
+  );
+
+  const deleteSelectedLine = useCallback(() => {
+    const id = selectedLineIdRef.current;
+    if (!id) return;
+    const line = drawnLinesRef.current.find((l) => l.data.id === id);
+    if (!line) return;
+    try {
+      if (line.type === 'hline' && seriesRef.current) {
+        seriesRef.current.removePriceLine(line.data.priceLine);
+      }
+      if (line.type === 'trendline' && chartRef.current) {
+        chartRef.current.removeSeries(line.data.series);
+      }
+    } catch (err) {
+      if (import.meta.env.DEV) console.warn('[CandleChart] delete failed', err);
+    }
+    drawnLinesRef.current = drawnLinesRef.current.filter((l) => l.data.id !== id);
+    setSelectedLineId(null);
+    setDeleteButtonPos(null);
+  }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        removePreviewSeries();
+        setPendingStart(null);
+        return;
+      }
+      if ((e.key === 'Delete' || e.key === 'Backspace') && selectedLineIdRef.current) {
+        deleteSelectedLine();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [removePreviewSeries, deleteSelectedLine]);
 
   const addHLine = useCallback((price: number) => {
     const series = seriesRef.current;
@@ -453,7 +526,17 @@ export function CandleChart({
   const handleClick = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
       const tool = drawingToolRef.current;
-      if (tool === 'cursor') return;
+
+      if (tool === 'cursor') {
+        const clicked = findNearestLine(e.nativeEvent.offsetX, e.nativeEvent.offsetY);
+        if (clicked) {
+          deselectLine();
+          selectLine(clicked.data.id, e.nativeEvent.offsetX, e.nativeEvent.offsetY);
+        } else {
+          deselectLine();
+        }
+        return;
+      }
 
       e.stopPropagation();
 
@@ -479,7 +562,7 @@ export function CandleChart({
         setPendingStart(null);
       }
     },
-    [getCoordinates, addHLine, addTrendLine, removePreviewSeries]
+    [getCoordinates, addHLine, addTrendLine, removePreviewSeries, findNearestLine, deselectLine, selectLine]
   );
 
   const handleDoubleClick = useCallback(
@@ -598,7 +681,7 @@ export function CandleChart({
             zIndex: 10,
             pointerEvents: 'none',
             fontSize: 11,
-            color: CHART_COLORS.trendline,
+            color: '#ffffff',
             backgroundColor: 'rgba(12,12,13,0.8)',
             padding: '2px 8px',
             borderRadius: 4,
@@ -608,6 +691,26 @@ export function CandleChart({
         >
           끝점을 클릭하세요 (ESC 취소)
         </div>
+      )}
+      {deleteButtonPos && selectedLineId && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            deleteSelectedLine();
+          }}
+          style={{
+            position: 'absolute',
+            left: deleteButtonPos.x,
+            top: deleteButtonPos.y,
+            transform: 'translate(-50%, -50%)',
+            zIndex: 20,
+            pointerEvents: 'auto',
+          }}
+          className="w-5 h-5 flex items-center justify-center rounded-full bg-red-500 hover:bg-red-600 text-white text-xs font-bold"
+          aria-label="선 삭제"
+        >
+          ×
+        </button>
       )}
     </div>
   );
