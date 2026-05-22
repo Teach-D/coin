@@ -104,6 +104,13 @@ export function CandleChart({
   const [pendingStart, setPendingStart] = useState<PendingStart | null>(null);
   const [selectedLineId, setSelectedLineId] = useState<string | null>(null);
   const [deleteButtonPos, setDeleteButtonPos] = useState<{ x: number; y: number } | null>(null);
+  const [handles, setHandles] = useState<{
+    start: { x: number; y: number };
+    end: { x: number; y: number };
+  } | null>(null);
+
+  const draggingHandleRef = useRef<'start' | 'end' | null>(null);
+  const justDraggedRef = useRef(false);
 
   useEffect(() => {
     drawingToolRef.current = drawingTool;
@@ -145,6 +152,7 @@ export function CandleChart({
     setPendingStart(null);
     setSelectedLineId(null);
     setDeleteButtonPos(null);
+    setHandles(null);
   }, [removePreviewSeries]);
 
   const clearAll = useCallback(() => {
@@ -169,6 +177,7 @@ export function CandleChart({
     setPendingStart(null);
     setSelectedLineId(null);
     setDeleteButtonPos(null);
+    setHandles(null);
   }, [removePreviewSeries]);
 
   useEffect(() => {
@@ -334,6 +343,7 @@ export function CandleChart({
     }
     setSelectedLineId(null);
     setDeleteButtonPos(null);
+    setHandles(null);
   }, []);
 
   const selectLine = useCallback(
@@ -352,7 +362,24 @@ export function CandleChart({
 
       if (line.type === 'trendline') {
         line.data.series.applyOptions({ color: '#f97316' });
-        setDeleteButtonPos({ x: clickX, y: clickY - 16 });
+
+        const startX = chartRef.current?.timeScale().timeToCoordinate(line.data.startTime) ?? null;
+        const startY = seriesRef.current?.priceToCoordinate(line.data.startPrice) ?? null;
+        const endX = chartRef.current?.timeScale().timeToCoordinate(line.data.endTime) ?? null;
+        const endY = seriesRef.current?.priceToCoordinate(line.data.endPrice) ?? null;
+
+        if (startX !== null && startY !== null && endX !== null && endY !== null) {
+          setHandles({
+            start: { x: startX, y: startY as number },
+            end: { x: endX, y: endY as number },
+          });
+          setDeleteButtonPos({
+            x: (startX + endX) / 2,
+            y: Math.min(startY as number, endY as number) - 20,
+          });
+        } else {
+          setDeleteButtonPos({ x: clickX, y: clickY - 16 });
+        }
       }
     },
     []
@@ -376,6 +403,7 @@ export function CandleChart({
     drawnLinesRef.current = drawnLinesRef.current.filter((l) => l.data.id !== id);
     setSelectedLineId(null);
     setDeleteButtonPos(null);
+    setHandles(null);
   }, []);
 
   useEffect(() => {
@@ -392,6 +420,83 @@ export function CandleChart({
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [removePreviewSeries, deleteSelectedLine]);
+
+  useEffect(() => {
+    const onDocMouseMove = (e: MouseEvent) => {
+      if (!draggingHandleRef.current) return;
+
+      const container = containerRef.current;
+      const chart = chartRef.current;
+      const series = seriesRef.current;
+      if (!container || !chart || !series) return;
+
+      const rect = container.getBoundingClientRect();
+      const offsetX = Math.max(0, Math.min(e.clientX - rect.left, rect.width));
+      const offsetY = Math.max(0, Math.min(e.clientY - rect.top, rect.height));
+
+      const time = chart.timeScale().coordinateToTime(offsetX) as UTCTimestamp | null;
+      const price = series.coordinateToPrice(offsetY);
+      if (time === null || price === null) return;
+
+      const target = draggingHandleRef.current;
+      const id = selectedLineIdRef.current;
+
+      const lineEntry = drawnLinesRef.current.find(
+        (l) => l.data.id === id && l.type === 'trendline'
+      ) as { type: 'trendline'; data: TrendLineEntry } | undefined;
+      if (!lineEntry) return;
+
+      if (target === 'start') {
+        lineEntry.data.startTime = time;
+        lineEntry.data.startPrice = price;
+      } else {
+        lineEntry.data.endTime = time;
+        lineEntry.data.endPrice = price;
+      }
+
+      const { startTime, startPrice, endTime, endPrice } = lineEntry.data;
+      const [p1, p2] =
+        startTime <= endTime
+          ? [{ time: startTime, value: startPrice }, { time: endTime, value: endPrice }]
+          : [{ time: endTime, value: endPrice }, { time: startTime, value: startPrice }];
+
+      if (p1.time !== p2.time) {
+        lineEntry.data.series.setData([p1, p2]);
+      }
+
+      const sx = chart.timeScale().timeToCoordinate(lineEntry.data.startTime);
+      const sy = series.priceToCoordinate(lineEntry.data.startPrice);
+      const ex = chart.timeScale().timeToCoordinate(lineEntry.data.endTime);
+      const ey = series.priceToCoordinate(lineEntry.data.endPrice);
+
+      if (sx !== null && sy !== null && ex !== null && ey !== null) {
+        setHandles({
+          start: { x: sx, y: sy as number },
+          end: { x: ex, y: ey as number },
+        });
+        setDeleteButtonPos({
+          x: (sx + ex) / 2,
+          y: Math.min(sy as number, ey as number) - 20,
+        });
+      }
+    };
+
+    const onDocMouseUp = () => {
+      if (draggingHandleRef.current) {
+        justDraggedRef.current = true;
+        setTimeout(() => { justDraggedRef.current = false; }, 150);
+      }
+      draggingHandleRef.current = null;
+    };
+
+    document.addEventListener('mousemove', onDocMouseMove);
+    document.addEventListener('mouseup', onDocMouseUp);
+
+    return () => {
+      document.removeEventListener('mousemove', onDocMouseMove);
+      document.removeEventListener('mouseup', onDocMouseUp);
+    };
+  }, []);
 
   const addHLine = useCallback((price: number) => {
     const series = seriesRef.current;
@@ -525,6 +630,7 @@ export function CandleChart({
 
   const handleClick = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
+      if (justDraggedRef.current) return;
       const tool = drawingToolRef.current;
 
       if (tool === 'cursor') {
@@ -597,6 +703,7 @@ export function CandleChart({
 
   const handleMouseMove = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
+      if (draggingHandleRef.current) return;
       if (drawingToolRef.current !== 'trendline') return;
       const pending = pendingStartRef.current;
       if (!pending) return;
@@ -711,6 +818,52 @@ export function CandleChart({
         >
           ×
         </button>
+      )}
+      {handles && selectedLineId && (
+        <>
+          <div
+            onMouseDown={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              draggingHandleRef.current = 'start';
+            }}
+            style={{
+              position: 'absolute',
+              left: handles.start.x,
+              top: handles.start.y,
+              transform: 'translate(-50%, -50%)',
+              zIndex: 25,
+              cursor: 'grab',
+              width: 12,
+              height: 12,
+              borderRadius: '50%',
+              backgroundColor: '#f97316',
+              border: '2px solid #ffffff',
+              pointerEvents: 'auto',
+            }}
+          />
+          <div
+            onMouseDown={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              draggingHandleRef.current = 'end';
+            }}
+            style={{
+              position: 'absolute',
+              left: handles.end.x,
+              top: handles.end.y,
+              transform: 'translate(-50%, -50%)',
+              zIndex: 25,
+              cursor: 'grab',
+              width: 12,
+              height: 12,
+              borderRadius: '50%',
+              backgroundColor: '#f97316',
+              border: '2px solid #ffffff',
+              pointerEvents: 'auto',
+            }}
+          />
+        </>
       )}
     </div>
   );
