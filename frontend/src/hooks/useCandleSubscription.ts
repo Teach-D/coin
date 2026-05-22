@@ -2,6 +2,8 @@ import { useEffect, useRef } from 'react';
 import { connectSocket, getSocket } from '../lib/socket';
 import type { CandleData, CandleUnit } from '../types';
 
+const KST_OFFSET_SECONDS = 9 * 3600;
+
 interface CandleUpdatePayload {
   market: string;
   unit: number;
@@ -28,7 +30,7 @@ export function useCandleSubscription(
     const handler = (payload: CandleUpdatePayload) => {
       if (payload.market !== market || payload.unit !== unit) return;
       onUpdateRef.current({
-        time: payload.candleStartMs / 1000,
+        time: payload.candleStartMs / 1000 + KST_OFFSET_SECONDS,
         open: payload.open,
         high: payload.high,
         low: payload.low,
