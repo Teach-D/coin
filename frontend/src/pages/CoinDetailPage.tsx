@@ -253,6 +253,7 @@ export function CoinDetailPage() {
                 drawingTool={activeTool}
                 onClearTrendLines={handleRegisterClearTrendLines}
                 onClearAll={handleRegisterClearAll}
+                onToolChange={setActiveTool}
               />
             )}
           </div>

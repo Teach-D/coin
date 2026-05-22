@@ -89,6 +89,7 @@ export interface CandleChartProps {
   drawingTool?: DrawingTool;
   onClearTrendLines?: (clearFn: () => void) => void;
   onClearAll?: (clearFn: () => void) => void;
+  onToolChange?: (tool: DrawingTool) => void;
 }
 
 export function CandleChart({
@@ -98,6 +99,7 @@ export function CandleChart({
   drawingTool = 'cursor',
   onClearTrendLines,
   onClearAll,
+  onToolChange,
 }: CandleChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
@@ -783,9 +785,13 @@ export function CandleChart({
         removePreviewSeries();
         addTrendLine(pending, coords);
         setPendingStart(null);
+
+        const newLine = drawnLinesRef.current[drawnLinesRef.current.length - 1];
+        if (newLine) selectLine(newLine.data.id, e.nativeEvent.offsetX, e.nativeEvent.offsetY);
+        onToolChange?.('cursor');
       }
     },
-    [getCoordinates, addHLine, addTrendLine, removePreviewSeries]
+    [getCoordinates, addHLine, addTrendLine, removePreviewSeries, selectLine, onToolChange]
   );
 
   const handleDoubleClick = useCallback(
