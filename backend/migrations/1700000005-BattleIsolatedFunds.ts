@@ -1,6 +1,6 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class BattleIsolatedFunds1700000005 implements MigrationInterface {
+export class BattleIsolatedFunds1700000005000 implements MigrationInterface {
   async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(
       `ALTER TABLE battle_sessions ADD COLUMN IF NOT EXISTS battle_balance BIGINT NOT NULL DEFAULT 0`,
