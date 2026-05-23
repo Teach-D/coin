@@ -29,6 +29,9 @@ export class User {
   @Column({ type: 'varchar', nullable: false, unique: true, length: 50 })
   nickname: string;
 
+  @Column({ name: 'nickname_set', type: 'boolean', nullable: false, default: false })
+  nicknameSet: boolean;
+
   @Column({ type: 'varchar', nullable: true, length: 500, name: 'profile_image_url' })
   profileImageUrl: string | null;
 

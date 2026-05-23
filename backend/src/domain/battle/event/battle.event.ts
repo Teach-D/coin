@@ -1,5 +1,9 @@
 import { BattleRankEntry, BattleResultResponse } from '../dto/battle-response.dto';
 
+export class BattleDeletedEvent {
+  constructor(public readonly battleId: string) {}
+}
+
 export class BattleFinishedEvent {
   constructor(
     public readonly battleId: string,

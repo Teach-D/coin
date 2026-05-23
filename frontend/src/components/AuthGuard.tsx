@@ -6,11 +6,16 @@ interface Props {
 }
 
 export function AuthGuard({ children }: Props) {
-  const { accessToken } = useAuthStore();
+  const { accessToken, nicknameSet } = useAuthStore();
   const location = useLocation();
 
   if (!accessToken) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
+
+  if (!nicknameSet) {
+    return <Navigate to="/nickname-setup" replace />;
+  }
+
   return <>{children}</>;
 }

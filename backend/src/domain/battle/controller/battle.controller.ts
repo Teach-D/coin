@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Post,
@@ -41,15 +42,18 @@ export class BattleController {
 
   @Get()
   async getBattleList(
+    @Req() req: Request,
     @Query('status') status: string = 'WAITING',
     @Query('page') page: string = '0',
     @Query('size') size: string = '20',
   ) {
+    const user = req.user as AuthenticatedUser;
     const battleStatus = (BattleStatus as any)[status] ?? BattleStatus.WAITING;
     const result = await this.battleService.getBattleList(
       battleStatus,
       parseInt(page, 10),
       parseInt(size, 10),
+      user.userId,
     );
     return ApiResponse.ok(result);
   }
@@ -58,6 +62,13 @@ export class BattleController {
   async getBattle(@Param('battleId') battleId: string) {
     const result = await this.battleService.getBattle(battleId);
     return ApiResponse.ok(result);
+  }
+
+  @Delete(':battleId')
+  async deleteBattle(@Req() req: Request, @Param('battleId') battleId: string) {
+    const user = req.user as AuthenticatedUser;
+    await this.battleService.deleteBattle(user.userId, battleId);
+    return ApiResponse.ok(null);
   }
 
   @Post(':battleId/join')

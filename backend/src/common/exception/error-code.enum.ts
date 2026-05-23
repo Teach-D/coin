@@ -37,6 +37,7 @@ export enum ErrorCode {
   VALIDATION_FAILED = 'VALIDATION_FAILED',
   BATTLE_POSITION_NOT_CLOSEABLE = 'BATTLE_POSITION_NOT_CLOSEABLE',
   BATTLE_SESSION_NOT_FOUND = 'BATTLE_SESSION_NOT_FOUND',
+  BATTLE_NOT_HOST = 'BATTLE_NOT_HOST',
 }
 
 export const ERROR_CODE_STATUS: Record<ErrorCode, number> = {
@@ -78,6 +79,7 @@ export const ERROR_CODE_STATUS: Record<ErrorCode, number> = {
   [ErrorCode.VALIDATION_FAILED]: 400,
   [ErrorCode.BATTLE_POSITION_NOT_CLOSEABLE]: 403,
   [ErrorCode.BATTLE_SESSION_NOT_FOUND]: 404,
+  [ErrorCode.BATTLE_NOT_HOST]: 403,
 };
 
 export const ERROR_CODE_MESSAGE: Record<ErrorCode, string> = {
@@ -119,4 +121,5 @@ export const ERROR_CODE_MESSAGE: Record<ErrorCode, string> = {
   [ErrorCode.VALIDATION_FAILED]: '유효하지 않은 요청입니다',
   [ErrorCode.BATTLE_POSITION_NOT_CLOSEABLE]: '배틀 포지션은 배틀룸에서만 청산할 수 있습니다',
   [ErrorCode.BATTLE_SESSION_NOT_FOUND]: '배틀 세션을 찾을 수 없습니다',
+  [ErrorCode.BATTLE_NOT_HOST]: '배틀 방장만 삭제할 수 있습니다',
 };

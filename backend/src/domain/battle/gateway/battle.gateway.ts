@@ -10,6 +10,7 @@ import { Server, Socket } from 'socket.io';
 import { JwtService } from '@nestjs/jwt';
 import { OnEvent } from '@nestjs/event-emitter';
 import { BattleSessionRepository } from '../repository/battle-session.repository';
+import { BattleDeletedEvent } from '../event/battle.event';
 
 @WebSocketGateway({
   cors: {
@@ -90,5 +91,10 @@ export class BattleGateway implements OnGatewayConnection {
   @OnEvent('socket.battle.participantJoined')
   handleParticipantJoined(data: { battleId: string; currentParticipants: number }) {
     this.broadcastToBattle(data.battleId, 'participantJoined', data);
+  }
+
+  @OnEvent('battle.deleted')
+  handleBattleDeleted(event: BattleDeletedEvent) {
+    this.broadcastToBattle(event.battleId, 'battle.deleted', { battleId: event.battleId });
   }
 }

@@ -31,6 +31,7 @@ export class UserService {
     const user = new User();
     user.email = email !== null ? this.aesEncryptor.encrypt(email) : null;
     user.nickname = await this.generateUniqueNickname(nickname);
+    user.nicknameSet = false;
     user.profileImageUrl = profileImageUrl;
     user.provider = provider;
     user.providerId = providerId;
@@ -63,6 +64,7 @@ export class UserService {
       nickname: user.nickname,
       profileImageUrl: user.profileImageUrl,
       email: user.email !== null ? this.aesEncryptor.decrypt(user.email) : null,
+      nicknameSet: user.nicknameSet,
     };
   }
 
@@ -74,12 +76,14 @@ export class UserService {
       throw new CoinBattleException(ErrorCode.DUPLICATE_NICKNAME);
     }
     user.nickname = nickname;
+    user.nicknameSet = true;
     await this.userRepository.save(user);
     return {
       userId: user.id,
       nickname: user.nickname,
       profileImageUrl: user.profileImageUrl,
       email: user.email !== null ? this.aesEncryptor.decrypt(user.email) : null,
+      nicknameSet: user.nicknameSet,
     };
   }
 

@@ -6,15 +6,17 @@ import type { ApiResponse, UserProfileResponse } from '../types';
 export function useUpdateProfile() {
   const queryClient = useQueryClient();
   const setNickname = useAuthStore((s) => s.setNickname);
+  const setNicknameSet = useAuthStore((s) => s.setNicknameSet);
 
   return useMutation({
     mutationFn: async (nickname: string) => {
-      const res = await api.patch<ApiResponse<UserProfileResponse>>('/api/users/me', { nickname });
+      const res = await api.patch<ApiResponse<UserProfileResponse>>('/api/users/me/nickname', { nickname });
       return res.data.data;
     },
     onSuccess: (data) => {
-      queryClient.setQueryData(['user', 'profile'], data);
       setNickname(data.nickname);
+      setNicknameSet(true);
+      queryClient.invalidateQueries({ queryKey: ['user', 'profile'] });
     },
   });
 }

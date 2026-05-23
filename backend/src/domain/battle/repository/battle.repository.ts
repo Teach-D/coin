@@ -34,6 +34,10 @@ export class BattleRepository {
     });
   }
 
+  async delete(battleId: string): Promise<void> {
+    await this.repo.delete({ battleId });
+  }
+
   async save(battle: Battle): Promise<Battle> {
     return this.repo.save(battle);
   }

@@ -23,11 +23,17 @@ export class GoogleStrategy extends PassportStrategy(GooglePassportStrategy, 'go
     _accessToken: string,
     _refreshToken: string,
     profile: any,
-  ): Promise<User> {
+    done: (err: any, user?: User) => void,
+  ): Promise<void> {
     const email: string | null = profile.emails?.[0]?.value ?? null;
     const nickname: string = profile.displayName ?? '';
     const profileImageUrl: string | null = profile.photos?.[0]?.value ?? null;
     const providerId: string = String(profile.id);
-    return this.userService.findOrCreateSocialUser(email, nickname, profileImageUrl, AuthProvider.GOOGLE, providerId);
+    try {
+      const user = await this.userService.findOrCreateSocialUser(email, nickname, profileImageUrl, AuthProvider.GOOGLE, providerId);
+      done(null, user);
+    } catch (err) {
+      done(err);
+    }
   }
 }

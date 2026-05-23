@@ -32,7 +32,7 @@ export class OAuth2Controller {
     }
     const tokens = this.userService.issueTokens(user);
     const redirectUri = this.configService.get<string>('OAUTH2_REDIRECT_URI', 'http://localhost:5173/login');
-    res.redirect(`${redirectUri}?accessToken=${tokens.accessToken}&refreshToken=${tokens.refreshToken}`);
+    res.redirect(`${redirectUri}?accessToken=${tokens.accessToken}&refreshToken=${tokens.refreshToken}&nickname=${encodeURIComponent(user.nickname)}&nicknameSet=${user.nicknameSet}`);
   }
 
   @Get('callback/kakao')
@@ -46,17 +46,7 @@ export class OAuth2Controller {
     }
     const tokens = this.userService.issueTokens(user);
     const redirectUri = this.configService.get<string>('OAUTH2_REDIRECT_URI', 'http://localhost:5173/login');
-    res.redirect(`${redirectUri}?accessToken=${tokens.accessToken}&refreshToken=${tokens.refreshToken}`);
+    res.redirect(`${redirectUri}?accessToken=${tokens.accessToken}&refreshToken=${tokens.refreshToken}&nickname=${encodeURIComponent(user.nickname)}&nicknameSet=${user.nicknameSet}`);
   }
 
-  private isAllowedRedirectUri(uri: string): boolean {
-    const allowed = [
-      this.configService.get<string>('OAUTH2_REDIRECT_URI'),
-      'http://localhost:5173/oauth2/callback',
-      'http://localhost:3000/oauth2/callback',
-    ].filter(Boolean) as string[];
-    return allowed.some(
-      (origin) => uri === origin || uri.startsWith(origin + '?') || uri.startsWith(origin + '#'),
-    );
-  }
 }

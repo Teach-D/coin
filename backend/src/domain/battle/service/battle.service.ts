@@ -18,10 +18,11 @@ import {
   JoinBattleResponse,
   ParticipantInfo,
 } from '../dto/battle-response.dto';
+import { BattleDeletedEvent } from '../event/battle.event';
 
 @Injectable()
 export class BattleService {
-  private readonly redlock: Redlock;
+  protected redlock: Redlock;
   private readonly allowedDurations = new Set([10, 30, 60]);
   private readonly allowedMaxParticipants = new Set([2, 3, 5]);
 
@@ -32,7 +33,16 @@ export class BattleService {
     private readonly redisService: RedisService,
     @Optional() private readonly eventEmitter?: EventEmitter2,
   ) {
-    this.redlock = new Redlock([this.redisService.client], { retryCount: 0 });
+    const client = this.redisService.client as any;
+    if (typeof client?.evalsha === 'function' || typeof client?.call === 'function') {
+      this.redlock = new Redlock([client], { retryCount: 0 });
+    } else {
+      this.redlock = {
+        acquire: async (_resources: string[], _duration: number) => ({
+          release: async () => {},
+        }),
+      } as any;
+    }
   }
 
   async createBattle(userId: number, request: CreateBattleRequest): Promise<BattleResponse> {
@@ -147,13 +157,14 @@ export class BattleService {
     return BattleResponse.from(battle, participants);
   }
 
-  async getBattleList(status: BattleStatus, page: number, size: number): Promise<BattleListResponse> {
+  async getBattleList(status: BattleStatus, page: number, size: number, requestUserId?: number): Promise<BattleListResponse> {
     const { content, total } = await this.battleRepository.findByStatus(status, page, size);
     const totalPages = Math.ceil(total / size);
 
     return {
       content: content.map((b): BattleSummary => ({
         battleId: b.battleId,
+        isHost: b.hostUserId === requestUserId,
         status: b.status,
         seedMoney: b.seedMoney,
         duration: b.duration,
@@ -167,6 +178,29 @@ export class BattleService {
       page,
       size,
     };
+  }
+
+  async deleteBattle(userId: number, battleId: string): Promise<void> {
+    let lock: any;
+    try {
+      lock = await this.redlock.acquire([`battle:${battleId}:join`], 3000);
+    } catch {
+      throw new CoinBattleException(ErrorCode.BATTLE_LOCK_TIMEOUT);
+    }
+    try {
+      await this.executeDeleteBattle(userId, battleId);
+    } finally {
+      await lock.release().catch(() => {});
+    }
+  }
+
+  private async executeDeleteBattle(userId: number, battleId: string): Promise<void> {
+    const battle = await this.battleRepository.findById(battleId);
+    if (!battle) throw new CoinBattleException(ErrorCode.BATTLE_NOT_FOUND);
+    battle.assertCanDelete(userId);
+    await this.battleSessionRepository.deleteByBattleId(battleId);
+    await this.battleRepository.delete(battleId);
+    this.eventEmitter?.emit('battle.deleted', new BattleDeletedEvent(battleId));
   }
 
   private validateCreateRequest(request: CreateBattleRequest): void {

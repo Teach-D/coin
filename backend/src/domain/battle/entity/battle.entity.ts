@@ -83,6 +83,15 @@ export class Battle {
     this.currentParticipants++;
   }
 
+  assertCanDelete(requestUserId: number): void {
+    if (this.hostUserId !== requestUserId) {
+      throw new CoinBattleException(ErrorCode.BATTLE_NOT_HOST);
+    }
+    if (this.status !== BattleStatus.WAITING) {
+      throw new CoinBattleException(ErrorCode.BATTLE_ALREADY_STARTED);
+    }
+  }
+
   canGenerateInvite(): boolean {
     return this.status === BattleStatus.IN_PROGRESS;
   }

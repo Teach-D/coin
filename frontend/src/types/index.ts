@@ -150,6 +150,7 @@ export interface BattleListItem {
   currentParticipants: number;
   startTime: string | null;
   createdAt: string;
+  isHost: boolean;
 }
 
 export interface BattleParticipant {

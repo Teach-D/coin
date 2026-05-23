@@ -22,13 +22,19 @@ export class KakaoStrategy extends PassportStrategy(KakaoPassportStrategy, 'kaka
     _accessToken: string,
     _refreshToken: string,
     profile: any,
-  ): Promise<User> {
+    done: (err: any, user?: User) => void,
+  ): Promise<void> {
     const kakaoAccount = profile._json?.kakao_account ?? {};
     const properties = profile._json?.properties ?? {};
     const email: string | null = kakaoAccount.email ?? null;
     const nickname: string = properties.nickname ?? profile.displayName ?? '';
     const profileImageUrl: string | null = properties.profile_image ?? null;
     const providerId: string = String(profile.id);
-    return this.userService.findOrCreateSocialUser(email, nickname, profileImageUrl, AuthProvider.KAKAO, providerId);
+    try {
+      const user = await this.userService.findOrCreateSocialUser(email, nickname, profileImageUrl, AuthProvider.KAKAO, providerId);
+      done(null, user);
+    } catch (err) {
+      done(err);
+    }
   }
 }
