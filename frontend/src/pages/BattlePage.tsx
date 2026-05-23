@@ -7,7 +7,6 @@ import type { BattleListItem, CreateBattleRequest, MatchBattleRequest } from '..
 
 type TabStatus = 'WAITING' | 'IN_PROGRESS';
 
-const LEVERAGE_OPTIONS = [1, 2, 3, 5, 10];
 const SEED_MONEY_OPTIONS = [100_000, 300_000, 500_000, 1_000_000];
 const DURATION_OPTIONS = [10, 30, 60];
 const MAX_PARTICIPANTS_OPTIONS = [2, 3, 5];
@@ -45,12 +44,7 @@ function BattleCard({ battle, onClick }: { battle: BattleListItem; onClick: () =
       className="flex flex-col gap-3 rounded-2xl border border-zinc-800 bg-zinc-900 p-4 cursor-pointer hover:border-zinc-600 hover:bg-zinc-800/80 transition-colors"
     >
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span className="rounded-full bg-orange-500/20 px-2 py-0.5 text-xs font-semibold text-orange-400">
-            {battle.leverage}x
-          </span>
-          <StatusBadge status={battle.status} />
-        </div>
+        <StatusBadge status={battle.status} />
         <span className="text-xs text-zinc-600">{battle.duration}분</span>
       </div>
 
@@ -168,21 +162,6 @@ function CreateBattleModal({ onClose, onCreated }: { onClose: () => void; onCrea
         </div>
 
         <div className="space-y-5">
-          <div>
-            <p className="text-xs text-zinc-500 mb-2">레버리지</p>
-            <div className="flex gap-2">
-              {LEVERAGE_OPTIONS.map((lv) => (
-                <OptionButton
-                  key={lv}
-                  selected={form.leverage === lv}
-                  onClick={() => setForm((f) => ({ ...f, leverage: lv }))}
-                >
-                  {lv}x
-                </OptionButton>
-              ))}
-            </div>
-          </div>
-
           <div>
             <p className="text-xs text-zinc-500 mb-2">시드머니</p>
             <div className="flex gap-2 flex-wrap">
@@ -346,9 +325,6 @@ function MatchQueueModal({ onClose }: { onClose: () => void }) {
             </div>
             <div className="w-full rounded-xl border border-zinc-800 bg-zinc-800/50 p-3 text-sm text-zinc-400 space-y-1">
               <div className="flex justify-between">
-                <span>레버리지</span><span className="text-white font-semibold">{form.leverage}x</span>
-              </div>
-              <div className="flex justify-between">
                 <span>시드머니</span><span className="text-white font-semibold">{formatMoney(form.seedMoney)}원</span>
               </div>
               <div className="flex justify-between">
@@ -368,16 +344,6 @@ function MatchQueueModal({ onClose }: { onClose: () => void }) {
         ) : (
           <>
             <div className="space-y-5">
-              <div>
-                <p className="text-xs text-zinc-500 mb-2">레버리지</p>
-                <div className="flex gap-2">
-                  {LEVERAGE_OPTIONS.map((lv) => (
-                    <OptionButton key={lv} selected={form.leverage === lv} onClick={() => setForm((f) => ({ ...f, leverage: lv }))}>
-                      {lv}x
-                    </OptionButton>
-                  ))}
-                </div>
-              </div>
               <div>
                 <p className="text-xs text-zinc-500 mb-2">시드머니</p>
                 <div className="flex gap-2 flex-wrap">
