@@ -148,6 +148,7 @@ export interface BattleListItem {
   duration: number;
   maxParticipants: number;
   currentParticipants: number;
+  startTime: string | null;
   createdAt: string;
 }
 

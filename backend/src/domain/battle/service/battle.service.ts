@@ -159,6 +159,7 @@ export class BattleService {
         duration: b.duration,
         maxParticipants: b.maxParticipants,
         currentParticipants: b.currentParticipants,
+        startTime: b.startTime,
         createdAt: b.createdAt,
       })),
       totalElements: total,

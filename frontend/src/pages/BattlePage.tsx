@@ -11,6 +11,29 @@ const SEED_MONEY_OPTIONS = [100_000, 300_000, 500_000, 1_000_000];
 const DURATION_OPTIONS = [10, 30, 60];
 const MAX_PARTICIPANTS_OPTIONS = [2, 3, 5];
 
+function useCountdown(endTimeMs: number | null): number {
+  const [remaining, setRemaining] = useState(() =>
+    endTimeMs ? Math.max(0, Math.floor((endTimeMs - Date.now()) / 1000)) : 0,
+  );
+
+  useEffect(() => {
+    if (!endTimeMs) return;
+    const update = () => setRemaining(Math.max(0, Math.floor((endTimeMs - Date.now()) / 1000)));
+    update();
+    const id = setInterval(update, 1000);
+    return () => clearInterval(id);
+  }, [endTimeMs]);
+
+  return remaining;
+}
+
+function formatCountdown(seconds: number): string {
+  if (seconds <= 0) return '종료';
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${m}:${s.toString().padStart(2, '0')}`;
+}
+
 function formatMoney(amount: number): string {
   if (amount >= 1_000_000) return `${amount / 1_000_000}백만`;
   if (amount >= 10_000) return `${amount / 10_000}만`;
@@ -34,6 +57,10 @@ function StatusBadge({ status }: { status: 'WAITING' | 'IN_PROGRESS' | 'FINISHED
 
 function BattleCard({ battle, onClick }: { battle: BattleListItem; onClick: () => void }) {
   const isFull = battle.currentParticipants >= battle.maxParticipants;
+  const endTimeMs = battle.startTime
+    ? new Date(battle.startTime).getTime() + battle.duration * 60 * 1000
+    : null;
+  const remainingSeconds = useCountdown(endTimeMs);
 
   return (
     <motion.div
@@ -45,7 +72,13 @@ function BattleCard({ battle, onClick }: { battle: BattleListItem; onClick: () =
     >
       <div className="flex items-center justify-between">
         <StatusBadge status={battle.status} />
-        <span className="text-xs text-zinc-600">{battle.duration}분</span>
+        {battle.status === 'IN_PROGRESS' && endTimeMs ? (
+          <span className={`text-xs font-mono font-semibold tabular-nums ${remainingSeconds < 60 ? 'text-red-400' : 'text-[#2DD4BF]'}`}>
+            {formatCountdown(remainingSeconds)}
+          </span>
+        ) : (
+          <span className="text-xs text-zinc-600">{battle.duration}분</span>
+        )}
       </div>
 
       <div className="flex items-end justify-between">

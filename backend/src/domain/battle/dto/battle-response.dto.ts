@@ -47,6 +47,7 @@ export interface BattleSummary {
   duration: number;
   maxParticipants: number;
   currentParticipants: number;
+  startTime: Date | null;
   createdAt: Date;
 }
 
