@@ -51,7 +51,6 @@ describe('BattleService', () => {
     it('유효한_요청으로_배틀_생성', async () => {
       const service = makeBattleService();
       const request: CreateBattleRequest = {
-        leverage: 2,
         seedMoney: 1_000_000,
         duration: 10,
         maxParticipants: 2,
@@ -68,7 +67,6 @@ describe('BattleService', () => {
         sessionRepo: { existsActiveByParticipantId: jest.fn().mockResolvedValue(true) },
       });
       const request: CreateBattleRequest = {
-        leverage: 2,
         seedMoney: 1_000_000,
         duration: 10,
         maxParticipants: 2,
@@ -82,7 +80,6 @@ describe('BattleService', () => {
     it('유효하지_않은_배틀_시간이면_예외_발생', async () => {
       const service = makeBattleService();
       const request = {
-        leverage: 2,
         seedMoney: 1_000_000,
         duration: 15,
         maxParticipants: 2,
@@ -96,7 +93,6 @@ describe('BattleService', () => {
     it('유효하지_않은_최대_참가자수이면_예외_발생', async () => {
       const service = makeBattleService();
       const request = {
-        leverage: 2,
         seedMoney: 1_000_000,
         duration: 10,
         maxParticipants: 4,

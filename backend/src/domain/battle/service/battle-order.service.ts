@@ -126,6 +126,42 @@ export class BattleOrderService {
     };
   }
 
+  async getBattlePositions(userId: number, battleId: string) {
+    const session = await this.battleSessionRepository.findByParticipantAndBattle(userId, battleId);
+    if (!session) throw new CoinBattleException(ErrorCode.BATTLE_ACCESS_DENIED);
+
+    const positions = await this.positionRepository.findOpenByUserIdAndBattleId(userId, battleId);
+
+    const result = await Promise.all(
+      positions.map(async (pos) => {
+        const ticker = await this.tickerRedisRepository.findByMarket(pos.ticker);
+        const currentPrice = ticker?.tradePrice ? Math.floor(ticker.tradePrice) : Number(pos.averagePrice);
+        const unrealizedPnl = pos.unrealizedPnl(currentPrice);
+        const evaluatedValue = pos.evaluatedValue(currentPrice);
+        const unrealizedPnlRate =
+          pos.margin > 0 ? (unrealizedPnl / pos.margin) * 100 : 0;
+
+        return {
+          positionId: Number(pos.id),
+          ticker: pos.ticker,
+          direction: pos.direction,
+          quantity: parseFloat(pos.quantity),
+          averagePrice: Number(pos.averagePrice),
+          leverage: pos.leverage,
+          currentPrice,
+          evaluatedValue,
+          unrealizedPnl,
+          unrealizedPnlRate: Math.round(unrealizedPnlRate * 100) / 100,
+          liquidationPrice: pos.liquidationPrice(),
+          status: pos.status,
+          openedAt: pos.openedAt.toISOString(),
+        };
+      }),
+    );
+
+    return { positions: result };
+  }
+
   async findByIdempotencyKey(key: string): Promise<OrderResponse | null> {
     return this.orderService.findByIdempotencyKey(key);
   }

@@ -66,9 +66,9 @@ export class Position {
     const positionValue = qty * currentPrice;
     const entryValue = qty * this.averagePrice;
     if (this.direction === OrderDirection.LONG) {
-      return Math.floor((positionValue - entryValue) * this.leverage);
+      return Math.floor(positionValue - entryValue);
     }
-    return Math.floor((entryValue - positionValue) * this.leverage);
+    return Math.floor(entryValue - positionValue);
   }
 
   evaluatedValue(currentPrice: number): number {

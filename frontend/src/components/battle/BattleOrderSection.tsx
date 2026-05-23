@@ -26,11 +26,12 @@ import { BattleOrderPanel } from './BattleOrderPanel';
 interface BattleOrderSectionProps {
   battleId: string;
   battleBalance: number;
+  disabled?: boolean;
 }
 
 const formatKRW = (n: number) => new Intl.NumberFormat('ko-KR').format(Math.round(n));
 
-export function BattleOrderSection({ battleId, battleBalance }: BattleOrderSectionProps) {
+export function BattleOrderSection({ battleId, battleBalance, disabled = false }: BattleOrderSectionProps) {
   useMarketTickers();
   const tickers = useTickerStore((s) => s.tickers);
 
@@ -59,7 +60,12 @@ export function BattleOrderSection({ battleId, battleBalance }: BattleOrderSecti
   }, []);
 
   return (
-    <div className={`${COLORS.card} rounded-2xl p-4 space-y-3`}>
+    <div className={`${COLORS.card} rounded-2xl p-4 space-y-3 ${disabled ? 'opacity-50 pointer-events-none' : ''}`}>
+      {disabled && (
+        <div className="text-center py-1 text-xs font-semibold text-zinc-500">
+          배틀이 종료되어 거래가 불가합니다
+        </div>
+      )}
       <div className="relative" ref={dropdownRef}>
         <button
           onClick={() => setIsOpen((v) => !v)}
@@ -139,6 +145,7 @@ export function BattleOrderSection({ battleId, battleBalance }: BattleOrderSecti
         ticker={selectedTicker}
         currentPrice={currentPrice}
         battleBalance={battleBalance}
+        disabled={disabled}
       />
     </div>
   );

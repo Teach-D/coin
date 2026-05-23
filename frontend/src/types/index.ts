@@ -144,11 +144,11 @@ export type BattleStatus = 'WAITING' | 'IN_PROGRESS' | 'FINISHED';
 export interface BattleListItem {
   battleId: string;
   status: BattleStatus;
-  leverage: number;
   seedMoney: number;
   duration: number;
   maxParticipants: number;
   currentParticipants: number;
+  startTime: string | null;
   createdAt: string;
 }
 
@@ -163,7 +163,6 @@ export interface BattleParticipant {
 export interface BattleDetail {
   battleId: string;
   status: BattleStatus;
-  leverage: number;
   seedMoney: number;
   duration: number;
   maxParticipants: number;
@@ -182,7 +181,6 @@ export interface BattleListResponse {
 }
 
 export interface CreateBattleRequest {
-  leverage: number;
   seedMoney: number;
   duration: number;
   maxParticipants: number;
@@ -192,7 +190,6 @@ export interface CreateBattleResponse {
   battleId: string;
   status: BattleStatus;
   hostUserId: number;
-  leverage: number;
   seedMoney: number;
   duration: number;
   maxParticipants: number;
@@ -209,7 +206,6 @@ export interface JoinBattleResponse {
 }
 
 export interface MatchBattleRequest {
-  leverage: number;
   seedMoney: number;
   duration: number;
   maxParticipants: number;

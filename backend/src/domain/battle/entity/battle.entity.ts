@@ -35,9 +35,6 @@ export class Battle {
   @Column({ name: 'end_time', type: 'timestamptz', nullable: true })
   endTime: Date | null;
 
-  @Column({ type: 'int', nullable: false, default: 2 })
-  leverage: number;
-
   @Column({ name: 'seed_money', type: 'bigint', nullable: false, default: 10_000_000 })
   seedMoney: number;
 

@@ -42,6 +42,7 @@ interface BattleOrderPanelProps {
   ticker: string;
   currentPrice: number;
   battleBalance: number;
+  disabled?: boolean;
 }
 
 const formatKRW = (n: number) => new Intl.NumberFormat('ko-KR').format(Math.round(n));
@@ -58,7 +59,7 @@ function calcLiquidationPrice(
     : currentPrice * (1 + ratio);
 }
 
-export function BattleOrderPanel({ battleId, ticker, currentPrice, battleBalance }: BattleOrderPanelProps) {
+export function BattleOrderPanel({ battleId, ticker, currentPrice, battleBalance, disabled = false }: BattleOrderPanelProps) {
   const direction = useOrderStore((s) => s.direction);
   const orderType = useOrderStore((s) => s.orderType);
   const amount = useOrderStore((s) => s.amount);
@@ -94,7 +95,7 @@ export function BattleOrderPanel({ battleId, ticker, currentPrice, battleBalance
   const liquidationPrice = calcLiquidationPrice(currentPrice, direction, leverage);
 
   const isLimitValid = orderType === 'MARKET' || parsedLimitPrice > 0;
-  const canSubmit = parsedAmount > 0 && parsedAmount <= battleBalance && isLimitValid && !isSubmitting;
+  const canSubmit = !disabled && parsedAmount > 0 && parsedAmount <= battleBalance && isLimitValid && !isSubmitting;
 
   const handleQuickAmount = (ratio: number) => {
     const value = Math.floor(battleBalance * ratio);
@@ -264,7 +265,9 @@ export function BattleOrderPanel({ battleId, ticker, currentPrice, battleBalance
         disabled={!canSubmit}
         className={`w-full py-3.5 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none ${dirColors.button}`}
       >
-        {isSubmitting ? (
+        {disabled ? (
+          '배틀 종료'
+        ) : isSubmitting ? (
           <>
             <Loader2 className="w-4 h-4 animate-spin" />
             주문 처리 중...

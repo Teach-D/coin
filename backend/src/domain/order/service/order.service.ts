@@ -219,7 +219,7 @@ export class OrderService {
         position.direction === OrderDirection.LONG
           ? exitValue - entryValue
           : entryValue - exitValue;
-      const realizedPnl = Math.floor(rawPnl * position.leverage);
+      const realizedPnl = Math.floor(rawPnl);
 
       if (!position.battleId) {
         user.balance += closeMargin + realizedPnl;
@@ -299,7 +299,7 @@ export class OrderService {
         lockedPosition.direction === OrderDirection.LONG
           ? exitValue - entryValue
           : entryValue - exitValue;
-      const realizedPnl = Math.floor(rawPnl * lockedPosition.leverage);
+      const realizedPnl = Math.floor(rawPnl);
 
       const user = await this.userRepository.findById(lockedPosition.userId);
       if (!user) throw new CoinBattleException(ErrorCode.USER_NOT_FOUND);

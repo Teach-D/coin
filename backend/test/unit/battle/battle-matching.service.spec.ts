@@ -9,7 +9,6 @@ import { CoinBattleException } from 'src/common/exception/coin-battle.exception'
 
 interface MatchQueueEntry {
   userId: number;
-  leverage: number;
   seedMoney: number;
   duration: number;
   maxParticipants: number;
@@ -56,7 +55,6 @@ function makeMatchingService(overrides: Partial<{
 function makeQueueEntries(count: number, overrides: Partial<MatchQueueEntry> = {}): MatchQueueEntry[] {
   return Array.from({ length: count }, (_, i) => ({
     userId: i + 1,
-    leverage: 2,
     seedMoney: 1_000_000,
     duration: 10,
     maxParticipants: count,
@@ -70,7 +68,6 @@ describe('BattleMatchingService', () => {
     it('유효한_요청으로_큐_등록_성공', async () => {
       const { service } = makeMatchingService();
       const request: MatchBattleRequest = {
-        leverage: 2,
         seedMoney: 1_000_000,
         duration: 10,
         maxParticipants: 2,
@@ -90,7 +87,6 @@ describe('BattleMatchingService', () => {
       });
 
       await service.enqueue(5, {
-        leverage: 3,
         seedMoney: 2_000_000,
         duration: 30,
         maxParticipants: 2,
@@ -237,7 +233,6 @@ describe('BattleMatchingService', () => {
     it('옵션이_다른_유저들은_매칭되지_않음', async () => {
       const entry1: MatchQueueEntry = {
         userId: 1,
-        leverage: 2,
         seedMoney: 1_000_000,
         duration: 10,
         maxParticipants: 2,
@@ -245,9 +240,8 @@ describe('BattleMatchingService', () => {
       };
       const entry2: MatchQueueEntry = {
         userId: 2,
-        leverage: 5,
         seedMoney: 1_000_000,
-        duration: 10,
+        duration: 30,
         maxParticipants: 2,
         enqueuedAt: Date.now(),
       };
