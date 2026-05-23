@@ -18,6 +18,7 @@ interface OrderState {
   isSubmitting: boolean;
 
   setPortfolio: (portfolio: Portfolio, positions: Position[]) => void;
+  removePosition: (positionId: number) => void;
   setTicker: (ticker: string) => void;
   setDirection: (direction: 'LONG' | 'SHORT') => void;
   setLeverage: (leverage: number) => void;
@@ -52,6 +53,10 @@ export const useOrderStore = create<OrderState>((set) => ({
       totalPnlRate: portfolio.totalPnlRate,
       positions,
     }),
+  removePosition: (positionId) =>
+    set((state) => ({
+      positions: state.positions.filter((p) => p.positionId !== positionId),
+    })),
   setTicker: (ticker) => set({ selectedTicker: ticker }),
   setDirection: (direction) => set({ direction }),
   setLeverage: (leverage) => set({ leverage }),

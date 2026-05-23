@@ -33,6 +33,7 @@ export function useBuyOrder() {
 export function useSellOrder() {
   const queryClient = useQueryClient();
   const setSubmitting = useOrderStore((s) => s.setSubmitting);
+  const removePosition = useOrderStore((s) => s.removePosition);
 
   return useMutation({
     mutationFn: async (payload: Omit<SellOrderRequest, 'idempotencyKey'>) => {
@@ -42,8 +43,13 @@ export function useSellOrder() {
     },
     onMutate: () => setSubmitting(true),
     onSettled: () => setSubmitting(false),
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
+      removePosition(variables.positionId);
       queryClient.invalidateQueries({ queryKey: ['portfolio'] });
+    },
+    onError: (error: any) => {
+      const message = error?.response?.data?.message ?? '청산 요청에 실패했습니다.';
+      alert(message);
     },
   });
 }
