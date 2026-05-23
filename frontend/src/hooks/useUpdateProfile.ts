@@ -6,6 +6,7 @@ import type { ApiResponse, UserProfileResponse } from '../types';
 export function useUpdateProfile() {
   const queryClient = useQueryClient();
   const setNickname = useAuthStore((s) => s.setNickname);
+  const setNicknameSet = useAuthStore((s) => s.setNicknameSet);
 
   return useMutation({
     mutationFn: async (nickname: string) => {
@@ -14,6 +15,7 @@ export function useUpdateProfile() {
     },
     onSuccess: (data) => {
       setNickname(data.nickname);
+      setNicknameSet(true);
       queryClient.invalidateQueries({ queryKey: ['user', 'profile'] });
     },
   });

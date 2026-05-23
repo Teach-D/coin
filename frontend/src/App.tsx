@@ -12,6 +12,7 @@ import { PortfolioPage } from './pages/PortfolioPage';
 import { BattleResultPage } from './pages/BattleResultPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { JoinByInvitePage } from './pages/JoinByInvitePage';
+import { NicknameSetupPage } from './pages/NicknameSetupPage';
 
 const HIDE_NAV_PATTERNS = [
   /^\/coin\//,
@@ -20,6 +21,7 @@ const HIDE_NAV_PATTERNS = [
   /^\/join\//,
   /^\/login$/,
   /^\/oauth2\//,
+  /^\/nickname-setup$/,
 ];
 
 function useShowNavBar() {
@@ -36,6 +38,7 @@ export default function App() {
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/oauth2/callback" element={<OAuth2Callback />} />
+          <Route path="/nickname-setup" element={<NicknameSetupPage />} />
           <Route path="/" element={<AuthGuard><MarketListPage /></AuthGuard>} />
           <Route path="/coin/:ticker" element={<AuthGuard><CoinDetailPage /></AuthGuard>} />
           <Route path="/battles" element={<AuthGuard><BattlePage /></AuthGuard>} />

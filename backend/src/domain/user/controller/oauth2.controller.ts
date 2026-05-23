@@ -32,7 +32,7 @@ export class OAuth2Controller {
     }
     const tokens = this.userService.issueTokens(user);
     const redirectUri = this.configService.get<string>('OAUTH2_REDIRECT_URI', 'http://localhost:5173/login');
-    res.redirect(`${redirectUri}?accessToken=${tokens.accessToken}&refreshToken=${tokens.refreshToken}&nickname=${encodeURIComponent(user.nickname)}`);
+    res.redirect(`${redirectUri}?accessToken=${tokens.accessToken}&refreshToken=${tokens.refreshToken}&nickname=${encodeURIComponent(user.nickname)}&nicknameSet=${user.nicknameSet}`);
   }
 
   @Get('callback/kakao')
@@ -46,7 +46,7 @@ export class OAuth2Controller {
     }
     const tokens = this.userService.issueTokens(user);
     const redirectUri = this.configService.get<string>('OAUTH2_REDIRECT_URI', 'http://localhost:5173/login');
-    res.redirect(`${redirectUri}?accessToken=${tokens.accessToken}&refreshToken=${tokens.refreshToken}&nickname=${encodeURIComponent(user.nickname)}`);
+    res.redirect(`${redirectUri}?accessToken=${tokens.accessToken}&refreshToken=${tokens.refreshToken}&nickname=${encodeURIComponent(user.nickname)}&nicknameSet=${user.nicknameSet}`);
   }
 
 }

@@ -3,6 +3,7 @@ export class UserProfileResponse {
   nickname: string;
   profileImageUrl: string | null;
   email: string | null;
+  nicknameSet: boolean;
 }
 
 export class UserStatsResponse {

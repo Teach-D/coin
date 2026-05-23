@@ -95,9 +95,9 @@ function BattleCard({
           {isHost && battle.status === 'WAITING' && (
             <button
               onClick={onDelete}
-              className="p-1 rounded-md text-zinc-600 hover:text-red-400 hover:bg-red-400/10 transition-colors"
+              className="p-1 rounded-md text-red-400 hover:bg-red-400/10 transition-colors"
             >
-              <Trash2 size={14} />
+              <Trash2 size={21} />
             </button>
           )}
         </div>
