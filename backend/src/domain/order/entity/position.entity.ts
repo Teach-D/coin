@@ -41,6 +41,9 @@ export class Position {
   @Column({ type: 'varchar', length: 20, nullable: false, default: PositionStatus.OPEN })
   status: PositionStatus;
 
+  @Column({ name: 'battle_id', type: 'uuid', nullable: true })
+  battleId: string | null;
+
   @VersionColumn({ default: 0 })
   version: number;
 

@@ -87,6 +87,7 @@ export class InviteService {
     session.id = uuidv4();
     session.battleId = battleId;
     session.participantId = inviteeId;
+    session.battleBalance = battle.seedMoney;
     await this.battleSessionRepository.save(session);
 
     return {

@@ -1,4 +1,4 @@
-import { IsEnum, IsInt, IsNotEmpty, IsNumber, IsOptional, IsString, Matches, Max, MaxLength, Min } from 'class-validator';
+import { IsEnum, IsInt, IsNotEmpty, IsNumber, IsOptional, IsString, IsUUID, Matches, Max, MaxLength, Min } from 'class-validator';
 import { OrderDirection, OrderType } from '../entity/order.entity';
 
 export class BuyOrderRequest {
@@ -31,6 +31,10 @@ export class BuyOrderRequest {
   @Min(1)
   @Max(10)
   leverage: number;
+
+  @IsOptional()
+  @IsUUID()
+  battleId?: string;
 }
 
 export class SellOrderRequest {
@@ -46,4 +50,8 @@ export class SellOrderRequest {
   @Min(0.0001)
   @Max(1)
   closeRatio: number;
+
+  @IsOptional()
+  @IsUUID()
+  battleId?: string;
 }

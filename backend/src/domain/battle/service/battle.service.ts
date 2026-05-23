@@ -60,6 +60,7 @@ export class BattleService {
     session.id = uuidv4();
     session.battleId = battle.battleId;
     session.participantId = userId;
+    session.battleBalance = battle.seedMoney;
     await this.battleSessionRepository.save(session);
 
     return BattleResponse.from(battle);
@@ -105,6 +106,7 @@ export class BattleService {
       session.id = uuidv4();
       session.battleId = battleId;
       session.participantId = userId;
+      session.battleBalance = battle.seedMoney;
       await this.battleSessionRepository.save(session);
       this.eventEmitter?.emit('socket.battle.participantJoined', {
         battleId,

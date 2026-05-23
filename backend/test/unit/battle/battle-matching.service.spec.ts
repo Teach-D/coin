@@ -318,5 +318,46 @@ describe('BattleMatchingService', () => {
       expect(hdelMock).toHaveBeenCalledWith('battle:match:queue', '1');
       expect(hdelMock).toHaveBeenCalledWith('battle:match:queue', '2');
     });
+
+    it('배틀_참가_시_session_battleBalance_seedMoney로_초기화', async () => {
+      const sessionSaveMock = jest.fn().mockImplementation((s) => Promise.resolve(s));
+      const entries = makeQueueEntries(2, { seedMoney: 1_000_000 });
+      const queueMap = Object.fromEntries(
+        entries.map((e) => [e.userId.toString(), JSON.stringify(e)]),
+      );
+
+      const { service } = makeMatchingService({
+        sessionRepo: { save: sessionSaveMock },
+        redisClient: { hgetall: jest.fn().mockResolvedValue(queueMap) },
+      });
+
+      await service.processMatchQueue();
+
+      expect(sessionSaveMock).toHaveBeenCalledTimes(2);
+      const savedSessions: any[] = sessionSaveMock.mock.calls.map(([session]) => session);
+      for (const session of savedSessions) {
+        expect(session.battleBalance).toBe(1_000_000);
+      }
+    });
+
+    it('seedMoney_500만원_배틀_참가시_session_battleBalance_500만원으로_초기화', async () => {
+      const sessionSaveMock = jest.fn().mockImplementation((s) => Promise.resolve(s));
+      const entries = makeQueueEntries(2, { seedMoney: 5_000_000 });
+      const queueMap = Object.fromEntries(
+        entries.map((e) => [e.userId.toString(), JSON.stringify(e)]),
+      );
+
+      const { service } = makeMatchingService({
+        sessionRepo: { save: sessionSaveMock },
+        redisClient: { hgetall: jest.fn().mockResolvedValue(queueMap) },
+      });
+
+      await service.processMatchQueue();
+
+      const savedSessions: any[] = sessionSaveMock.mock.calls.map(([session]) => session);
+      for (const session of savedSessions) {
+        expect(session.battleBalance).toBe(5_000_000);
+      }
+    });
   });
 });

@@ -127,3 +127,11 @@ export interface BattleWebSocketMessage {
   battleId: string;
   data: Record<string, any>;
 }
+
+export class BattleBalanceResponse {
+  battleBalance: number;
+  openPositionValue: number;
+  totalValuation: number;
+  returnRate: number;
+  seedMoney: number;
+}

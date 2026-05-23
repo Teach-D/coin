@@ -308,3 +308,31 @@ export interface LiquidationCardReadyNotification {
   cardImageUrl: string;
   timestamp: string;
 }
+
+export interface BattleBalanceResponse {
+  battleBalance: number;
+  openPositionValue: number;
+  totalValuation: number;
+  returnRate: number;
+  seedMoney: number;
+}
+
+export interface BattlePosition {
+  positionId: number;
+  ticker: string;
+  direction: 'LONG' | 'SHORT';
+  quantity: number;
+  averagePrice: number;
+  leverage: number;
+  currentPrice: number;
+  evaluatedValue: number;
+  unrealizedPnl: number;
+  unrealizedPnlRate: number;
+  liquidationPrice: number;
+  status: 'OPEN' | 'CLOSED';
+  openedAt: string;
+}
+
+export interface BattlePositionsResponse {
+  positions: BattlePosition[];
+}

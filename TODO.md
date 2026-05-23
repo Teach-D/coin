@@ -179,3 +179,26 @@
 - [ ] 수평선 구현 — `series.createPriceLine({ price, color, lineStyle, lineWidth })` API 활용, 클릭 한 번으로 생성
 - [ ] 추세선 구현 — `chart.addSeries(LineSeries)` 두 점 데이터로 직선 렌더링, 클릭 두 번으로 시작점/끝점 지정
 - [ ] `CoinDetailPage.tsx` 수정 — `DrawingToolbar` + `CandleChart` 통합, 그려진 선 삭제 버튼(더블클릭 또는 X 버튼) 추가
+
+## 2026-05-23
+
+### Backend — 배틀 격리 자금: DB + 엔티티
+
+- [ ] `1700000005-BattleIsolatedFunds.ts` 마이그레이션 생성 — `battle_sessions.battle_balance BIGINT NOT NULL DEFAULT 0`, `positions.battle_id UUID nullable` 컬럼 추가 + `idx_positions_user_battle` 인덱스
+- [ ] `BattleSession` 엔티티에 `battleBalance: number` 필드 추가, `Position` 엔티티에 `battleId: string | null` 필드 추가
+- [ ] `BattleSessionRepository.findByParticipantAndBattle(userId, battleId)` 메서드 추가, `PositionRepository.findOpenByUserIdAndBattleId(userId, battleId)` 메서드 추가
+
+### Backend — 배틀 격리 자금: 주문 흐름
+
+- [ ] `BattleMatchingService` — 배틀 참가 세션 저장 시 `session.battleBalance = battle.seedMoney` 초기화
+- [ ] `BuyOrderRequest` / `SellOrderRequest` DTO에 `battleId?: string` 추가, `OrderService.executeBuy()` / `executeSell()` — `battleId` 있을 때 `user.balance` 대신 `session.battleBalance` 차감, 생성되는 `position.battleId` 세팅
+
+### Backend — 배틀 격리 자금: 종료 처리
+
+- [ ] `BattleEndService.finishBattleInTransaction()` — 종료 전 배틀 오픈 포지션 시장가 강제 청산 (`position.battleId = battleId` 기준), 청산 손익을 `session.battleBalance`에 반영
+- [ ] `BattleEndService.calculateFinalValuation()` 시그니처 변경 → `(session, battle)` — `session.battleBalance + 해당 배틀 포지션 평가금액` 기준으로 수정
+
+### Frontend — 배틀룸 전용 거래 패널
+
+- [ ] `BattleRoom.tsx` — 진행 중 뷰에 코인 선택 드롭다운 + `OrderPanel` 통합, 주문 시 `battleId` 자동 주입
+- [ ] `BattleRoom.tsx` — 상단에 배틀 전용 잔고(`battleBalance`) 표시 (`GET /api/battles/:battleId/my-balance` 또는 배틀 상세 응답에 포함)

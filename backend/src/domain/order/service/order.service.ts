@@ -42,6 +42,12 @@ export class OrderService {
     });
   }
 
+  async findByIdempotencyKey(idempotencyKey: string): Promise<OrderResponse | null> {
+    const order = await this.orderRepository.findByIdempotencyKey(idempotencyKey);
+    if (!order) return null;
+    return OrderResponse.from(order);
+  }
+
   async buy(userId: number, request: BuyOrderRequest): Promise<OrderResponse> {
     if (request.orderType === OrderType.LIMIT && !request.limitPrice) {
       throw new CoinBattleException(ErrorCode.LIMIT_PRICE_REQUIRED);
@@ -114,12 +120,13 @@ export class OrderService {
       const notionalValue = margin * request.leverage;
       const executedQuantity = (notionalValue / executedPrice).toFixed(BD_SCALE);
 
-      if (user.balance < margin) {
-        throw new CoinBattleException(ErrorCode.INSUFFICIENT_BALANCE);
+      if (!request.battleId) {
+        if (user.balance < margin) {
+          throw new CoinBattleException(ErrorCode.INSUFFICIENT_BALANCE);
+        }
+        user.balance -= margin;
+        await manager.save(user);
       }
-
-      user.balance -= margin;
-      await manager.save(user);
 
       const position = await this.upsertPosition(
         manager,
@@ -130,6 +137,7 @@ export class OrderService {
         executedPrice,
         request.leverage,
         margin,
+        request.battleId ?? null,
       );
       savedPosition = position;
 
@@ -193,6 +201,7 @@ export class OrderService {
       if (!position) throw new CoinBattleException(ErrorCode.POSITION_NOT_FOUND);
       if (Number(position.userId) !== userId) throw new CoinBattleException(ErrorCode.POSITION_NOT_OWNED);
       if (position.status === PositionStatus.CLOSED) throw new CoinBattleException(ErrorCode.POSITION_ALREADY_CLOSED);
+      if (position.battleId && !request.battleId) throw new CoinBattleException(ErrorCode.BATTLE_POSITION_NOT_CLOSEABLE);
 
       const closeRatio = request.closeRatio;
       const currentPrice = await this.resolvePrice(position.ticker, OrderType.MARKET, null);
@@ -212,8 +221,10 @@ export class OrderService {
           : entryValue - exitValue;
       const realizedPnl = Math.floor(rawPnl * position.leverage);
 
-      user.balance += closeMargin + realizedPnl;
-      await manager.save(user);
+      if (!position.battleId) {
+        user.balance += closeMargin + realizedPnl;
+        await manager.save(user);
+      }
 
       const isFullClose = Math.abs(closeRatio - 1) < 1e-9;
       if (isFullClose) {
@@ -380,12 +391,14 @@ export class OrderService {
     executedPrice: number,
     leverage: number,
     addMargin: number,
+    battleId: string | null = null,
   ): Promise<Position> {
     const existing = await this.positionRepository.findByUserIdAndTickerAndDirectionAndStatus(
       userId,
       ticker,
       direction,
       PositionStatus.OPEN,
+      battleId,
     );
 
     if (existing) {
@@ -414,6 +427,7 @@ export class OrderService {
     position.leverage = leverage;
     position.margin = addMargin;
     position.status = PositionStatus.OPEN;
+    position.battleId = battleId;
     const savedPosition = await manager.save(position);
     position.id = savedPosition.id ?? position.id;
     return position;

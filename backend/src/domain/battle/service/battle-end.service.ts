@@ -8,7 +8,6 @@ import { BattleRepository } from '../repository/battle.repository';
 import { BattleSessionRepository } from '../repository/battle-session.repository';
 import { TickerRedisRepository } from '../../market/repository/ticker-redis.repository';
 import { PositionRepository } from '../../order/repository/position.repository';
-import { PositionStatus } from '../../order/entity/position.entity';
 import { User } from '../../user/entity/user.entity';
 import { Battle, BattleStatus } from '../entity/battle.entity';
 import { BattleSession } from '../entity/battle-session.entity';
@@ -20,7 +19,7 @@ import {
 import { BattleFinishedEvent } from '../event/battle.event';
 
 interface SessionValuation {
-  session: BattleSession;
+  session: BattleSession & { battleBalance: number };
   finalValuation: number;
 }
 
@@ -69,10 +68,14 @@ export class BattleEndService {
     const valuations: SessionValuation[] = await Promise.all(
       sessions.map((session) =>
         this.finishValuationSemaphore.run(async () => {
-          const user = userMap.get(session.participantId);
-          if (!user) return { session, finalValuation: 0 };
-          const finalValuation = await this.calculateFinalValuation(user);
-          return { session, finalValuation };
+          const typedSession = session as BattleSession & { battleBalance: number };
+          try {
+            await this.forceCloseBattlePositions(typedSession, battle);
+          } catch (e) {
+            this.logger.error(`배틀 포지션 강제 청산 실패 sessionId=${session.id}`, e);
+          }
+          const finalValuation = await this.calculateFinalValuation(typedSession, battle);
+          return { session: typedSession, finalValuation };
         }),
       ),
     );
@@ -172,7 +175,9 @@ export class BattleEndService {
     };
   }
 
-  async calculateLiveRankings(battle: Battle): Promise<{ userId: number; currentValuation: number; rank: number }[]> {
+  async calculateLiveRankings(
+    battle: Battle,
+  ): Promise<{ userId: number; nickname: string; currentValuation: number; returnRate: number; rank: number }[]> {
     const sessions = await this.battleSessionRepository.findByBattleId(battle.battleId);
     const participantIds = sessions.map((s) => s.participantId);
     const users = await this.userRepository.findAllByIds(participantIds);
@@ -182,26 +187,61 @@ export class BattleEndService {
       sessions.map((session) =>
         this.rankingValuationSemaphore.run(async () => {
           const user = userMap.get(session.participantId);
-          if (!user) return { userId: session.participantId, currentValuation: 0 };
-          const currentValuation = await this.calculateFinalValuation(user);
-          return { userId: session.participantId, currentValuation };
+          const typedSession = session as BattleSession & { battleBalance: number };
+          const currentValuation = await this.calculateFinalValuation(typedSession, battle);
+          return { userId: session.participantId, nickname: user?.nickname ?? '', currentValuation };
         }),
       ),
     );
 
     const ranked = [...valuations].sort((a, b) => b.currentValuation - a.currentValuation);
-    return ranked.map((entry, index) => ({ ...entry, rank: index + 1 }));
+    return ranked.map((entry, index) => ({
+      ...entry,
+      rank: index + 1,
+      returnRate: battle.seedMoney > 0 ? ((entry.currentValuation - battle.seedMoney) / battle.seedMoney) * 100 : 0,
+    }));
   }
 
-  private async calculateFinalValuation(user: User): Promise<number> {
-    const openPositions = await this.positionRepository.findByUserIdAndStatus(user.id, PositionStatus.OPEN);
+  private async forceCloseBattlePositions(
+    session: BattleSession & { battleBalance: number },
+    battle: Battle,
+  ): Promise<void> {
+    const openPositions =
+      (await this.positionRepository.findOpenByUserIdAndBattleId(
+        session.participantId,
+        battle.battleId,
+      )) ?? [];
+    for (const position of openPositions) {
+      try {
+        const ticker = await this.tickerRedisRepository.findByMarket(position.ticker);
+        const currentPrice = ticker?.tradePrice ? Math.floor(ticker.tradePrice) : position.averagePrice;
+        const realizedPnl = position.unrealizedPnl(currentPrice);
+        session.battleBalance += Math.max(position.margin + realizedPnl, 0);
+        position.close();
+        await this.positionRepository.save(position);
+      } catch (e) {
+        this.logger.error(`포지션 강제 청산 실패 positionId=${position.id}`, e);
+      }
+    }
+    await this.battleSessionRepository.save(session);
+  }
+
+  private async calculateFinalValuation(
+    session: BattleSession & { battleBalance: number },
+    battle: Battle,
+  ): Promise<number> {
+    const openPositions =
+      (await this.positionRepository.findOpenByUserIdAndBattleId(
+        session.participantId,
+        battle.battleId,
+      )) ?? [];
     const positionValue = await openPositions.reduce(async (accPromise, position) => {
       const acc = await accPromise;
       const ticker = await this.tickerRedisRepository.findByMarket(position.ticker);
       const currentPrice = ticker?.tradePrice ? Math.floor(ticker.tradePrice) : position.averagePrice;
       return acc + position.evaluatedValue(currentPrice);
     }, Promise.resolve(0));
-    return user.balance + positionValue;
+    return session.battleBalance + positionValue;
   }
 
   private buildRankings(

@@ -15,7 +15,9 @@ import { BattleService } from '../service/battle.service';
 import { BattleEndService } from '../service/battle-end.service';
 import { InviteService } from '../service/invite.service';
 import { BattleMatchingService } from '../service/battle-matching.service';
+import { BattleOrderService } from '../service/battle-order.service';
 import { CreateBattleRequest, MatchBattleRequest } from '../dto/battle-request.dto';
+import { BuyOrderRequest, SellOrderRequest } from '../../order/dto/order-request.dto';
 import { BattleStatus } from '../entity/battle.entity';
 import { AuthenticatedUser } from '../../user/service/jwt.strategy';
 
@@ -27,6 +29,7 @@ export class BattleController {
     private readonly battleEndService: BattleEndService,
     private readonly inviteService: InviteService,
     private readonly battleMatchingService: BattleMatchingService,
+    private readonly battleOrderService: BattleOrderService,
   ) {}
 
   @Post()
@@ -82,6 +85,35 @@ export class BattleController {
   async joinByInvite(@Req() req: Request, @Param('code') code: string) {
     const user = req.user as AuthenticatedUser;
     const result = await this.inviteService.joinByInvite(code, user.userId);
+    return ApiResponse.ok(result);
+  }
+
+  @Post(':battleId/buy')
+  async battleBuy(
+    @Req() req: Request,
+    @Param('battleId') battleId: string,
+    @Body() body: BuyOrderRequest,
+  ) {
+    const user = req.user as AuthenticatedUser;
+    const result = await this.battleOrderService.battleBuy(user.userId, battleId, body);
+    return ApiResponse.ok(result);
+  }
+
+  @Post(':battleId/sell')
+  async battleSell(
+    @Req() req: Request,
+    @Param('battleId') battleId: string,
+    @Body() body: SellOrderRequest,
+  ) {
+    const user = req.user as AuthenticatedUser;
+    const result = await this.battleOrderService.battleSell(user.userId, battleId, body);
+    return ApiResponse.ok(result);
+  }
+
+  @Get(':battleId/my-balance')
+  async getMyBalance(@Req() req: Request, @Param('battleId') battleId: string) {
+    const user = req.user as AuthenticatedUser;
+    const result = await this.battleOrderService.getMyBalance(user.userId, battleId);
     return ApiResponse.ok(result);
   }
 
