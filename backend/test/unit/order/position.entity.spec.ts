@@ -47,7 +47,7 @@ describe('Position entity', () => {
       const pos = makePosition({
         direction: OrderDirection.LONG,
         averagePrice: 50_000,
-        quantity: '1.0000000000',
+        quantity: '2.0000000000',
         leverage: 2,
         margin: 50_000,
       });
@@ -59,12 +59,24 @@ describe('Position entity', () => {
       const pos = makePosition({
         direction: OrderDirection.SHORT,
         averagePrice: 50_000,
-        quantity: '1.0000000000',
+        quantity: '2.0000000000',
         leverage: 2,
         margin: 50_000,
       });
       const pnl = pos.unrealizedPnl(40_000);
       expect(pnl).toBe(Math.floor((50_000 - 40_000) * 2));
+    });
+
+    it('숏_포지션_3x_레버리지_0.49퍼센트_하락_수익_검증', () => {
+      const pos = makePosition({
+        direction: OrderDirection.SHORT,
+        averagePrice: 3_050_000,
+        quantity: (50_000 * 3 / 3_050_000).toFixed(10),
+        leverage: 3,
+        margin: 50_000,
+      });
+      const pnl = pos.unrealizedPnl(3_035_050);
+      expect(pnl).toBe(735);
     });
   });
 
@@ -73,7 +85,7 @@ describe('Position entity', () => {
       const pos = makePosition({
         direction: OrderDirection.LONG,
         averagePrice: 50_000,
-        quantity: '1.0000000000',
+        quantity: '2.0000000000',
         leverage: 2,
         margin: 50_000,
       });
