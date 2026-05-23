@@ -117,6 +117,13 @@ export class BattleController {
     return ApiResponse.ok(result);
   }
 
+  @Get(':battleId/positions')
+  async getBattlePositions(@Req() req: Request, @Param('battleId') battleId: string) {
+    const user = req.user as AuthenticatedUser;
+    const result = await this.battleOrderService.getBattlePositions(user.userId, battleId);
+    return ApiResponse.ok(result);
+  }
+
   @Post('match/enqueue')
   async enqueueMatch(@Req() req: Request, @Body() body: MatchBattleRequest) {
     const user = req.user as AuthenticatedUser;

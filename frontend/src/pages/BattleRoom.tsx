@@ -43,21 +43,27 @@ function getRankMeta(rank: number): { color: string; label: string } {
   return { color: '', label: `${rank}위` };
 }
 
-function useCountdown(endTime: string | null): string {
+function useCountdown(endTime: string | null): { display: string; isExpired: boolean } {
   const [remaining, setRemaining] = useState('');
+  const [isExpired, setIsExpired] = useState(false);
 
   useEffect(() => {
-    if (!endTime) return;
+    if (!endTime) {
+      setIsExpired(false);
+      return;
+    }
 
     const update = () => {
       const diff = new Date(endTime).getTime() - Date.now();
       if (diff <= 0) {
         setRemaining('00:00');
+        setIsExpired(true);
         return;
       }
       const m = Math.floor(diff / 60_000);
       const s = Math.floor((diff % 60_000) / 1000);
       setRemaining(`${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`);
+      setIsExpired(false);
     };
 
     update();
@@ -65,7 +71,7 @@ function useCountdown(endTime: string | null): string {
     return () => clearInterval(id);
   }, [endTime]);
 
-  return remaining;
+  return { display: remaining, isExpired };
 }
 
 function RankingRow({ entry, index }: { entry: BattleRankingEntry; index: number }) {
@@ -227,12 +233,21 @@ function InProgressView({
   battleId,
   endTime,
   rankings,
+  onExpired,
 }: {
   battleId: string;
   endTime: string | null;
   rankings: BattleRankingEntry[];
+  onExpired: () => void;
 }) {
-  const remaining = useCountdown(endTime);
+  const { display: remaining, isExpired } = useCountdown(endTime);
+  const onExpiredRef = useRef(onExpired);
+  onExpiredRef.current = onExpired;
+
+  useEffect(() => {
+    if (isExpired) onExpiredRef.current();
+  }, [isExpired]);
+
   const { data: balanceData, isLoading: isBalanceLoading } = useBattleBalance(battleId);
   const { data: positions, isLoading: isPositionsLoading } = useBattlePositions(battleId);
 
@@ -243,11 +258,24 @@ function InProgressView({
       transition={{ duration: 0.2 }}
       className="flex flex-col gap-4"
     >
-      <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-4 flex flex-col items-center gap-2">
+      <div className={`rounded-2xl border p-4 flex flex-col items-center gap-2 transition-colors ${
+        isExpired ? 'border-zinc-700 bg-zinc-900/50' : 'border-zinc-800 bg-zinc-900'
+      }`}>
         <p className="text-xs text-zinc-500">남은 시간</p>
-        <span className="font-mono text-4xl font-bold text-orange-400 tabular-nums">
-          {remaining || '--:--'}
-        </span>
+        {isExpired ? (
+          <div className="flex flex-col items-center gap-1">
+            <span className="font-mono text-4xl font-bold text-zinc-500 tabular-nums">00:00</span>
+            <span className="text-xs text-zinc-500 animate-pulse">결과 집계 중...</span>
+          </div>
+        ) : (
+          <span className={`font-mono text-4xl font-bold tabular-nums transition-colors ${
+            remaining && parseInt(remaining.split(':')[0]) === 0 && parseInt(remaining.split(':')[1]) <= 30
+              ? 'text-red-400'
+              : 'text-orange-400'
+          }`}>
+            {remaining || '--:--'}
+          </span>
+        )}
       </div>
 
       <BattleBalanceCard data={balanceData} isLoading={isBalanceLoading} />
@@ -255,6 +283,7 @@ function InProgressView({
       <BattleOrderSection
         battleId={battleId}
         battleBalance={balanceData?.battleBalance ?? 0}
+        disabled={isExpired}
       />
 
       <BattlePositionList
@@ -371,6 +400,7 @@ export function BattleRoom() {
   const [isError, setIsError] = useState(false);
   const [showResultCard, setShowResultCard] = useState(false);
   const [cardImageUrl, setCardImageUrl] = useState<string | null>(null);
+  const [clientExpired, setClientExpired] = useState(false);
 
   const currentUserId = parseUserIdFromToken(accessToken);
   const { data: battleResult } = useBattleResult(
@@ -387,6 +417,17 @@ export function BattleRoom() {
       .catch(() => setIsError(true))
       .finally(() => setIsLoading(false));
   }, [battleId]);
+
+  useEffect(() => {
+    if (!clientExpired || !battleId || currentBattle?.status === 'FINISHED') return;
+    fetchBattle(battleId);
+    const id = setInterval(() => fetchBattle(battleId), 3000);
+    return () => clearInterval(id);
+  }, [clientExpired, battleId]);
+
+  useEffect(() => {
+    if (currentBattle?.status === 'FINISHED') setClientExpired(false);
+  }, [currentBattle?.status]);
 
   const rankUpdateHandlerRef = useRef<((data: { rankings: BattleRankingEntry[] }) => void) | null>(null);
   const battleStartedHandlerRef = useRef<(() => void) | null>(null);
@@ -556,6 +597,7 @@ export function BattleRoom() {
               battleId={currentBattle.battleId}
               endTime={currentBattle.endTime}
               rankings={rankings}
+              onExpired={() => setClientExpired(true)}
             />
           )}
           {currentBattle.status === 'FINISHED' && (
