@@ -125,7 +125,6 @@ function OptionButton({
 function CreateBattleModal({ onClose, onCreated }: { onClose: () => void; onCreated: (battleId: string) => void }) {
   const createBattle = useBattleStore((s) => s.createBattle);
   const [form, setForm] = useState<CreateBattleRequest>({
-    leverage: 5,
     seedMoney: 1_000_000,
     duration: 10,
     maxParticipants: 2,
@@ -227,7 +226,6 @@ function MatchQueueModal({ onClose }: { onClose: () => void }) {
   const navigate = useNavigate();
   const { matchingStatus, queueKey, enterMatchQueue, cancelMatchQueue } = useBattleStore();
   const [form, setForm] = useState<MatchBattleRequest>({
-    leverage: 5,
     seedMoney: 1_000_000,
     duration: 10,
     maxParticipants: 2,

@@ -105,25 +105,17 @@ function RankingRow({ entry, index }: { entry: BattleRankingEntry; index: number
 }
 
 function BattleInfoCard({
-  leverage,
   seedMoney,
   duration,
   status,
 }: {
-  leverage: number;
   seedMoney: number;
   duration: number;
   status: string;
 }) {
   return (
     <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-4">
-      <div className="grid grid-cols-4 gap-3">
-        <div className="flex flex-col items-center gap-1">
-          <span className="text-xs text-zinc-500">레버리지</span>
-          <span className="rounded-full bg-orange-500/20 px-2 py-0.5 text-xs font-bold text-orange-400">
-            {leverage}x
-          </span>
-        </div>
+      <div className="grid grid-cols-3 gap-3">
         <div className="flex flex-col items-center gap-1">
           <span className="text-xs text-zinc-500">시드</span>
           <span className="text-xs font-semibold text-white">{formatMoney(seedMoney)}</span>
@@ -575,7 +567,6 @@ export function BattleRoom() {
 
       <main className="max-w-2xl mx-auto w-full flex-1 p-4 space-y-4">
         <BattleInfoCard
-          leverage={currentBattle.leverage}
           seedMoney={currentBattle.seedMoney}
           duration={currentBattle.duration}
           status={currentBattle.status}

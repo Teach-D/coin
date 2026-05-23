@@ -47,7 +47,6 @@ export class BattleService {
     battle.battleId = uuidv4();
     battle.hostUserId = userId;
     battle.userId = userId;
-    battle.leverage = request.leverage;
     battle.seedMoney = request.seedMoney;
     battle.duration = request.duration;
     battle.maxParticipants = request.maxParticipants;
@@ -156,7 +155,6 @@ export class BattleService {
       content: content.map((b): BattleSummary => ({
         battleId: b.battleId,
         status: b.status,
-        leverage: b.leverage,
         seedMoney: b.seedMoney,
         duration: b.duration,
         maxParticipants: b.maxParticipants,

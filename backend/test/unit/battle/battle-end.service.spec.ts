@@ -15,7 +15,6 @@ function makeBattle(overrides: Partial<Battle> = {}): Battle {
   battle.battleId = overrides.battleId ?? 'battle-uuid-1';
   battle.status = overrides.status ?? BattleStatus.IN_PROGRESS;
   battle.seedMoney = overrides.seedMoney ?? 1_000_000;
-  battle.leverage = overrides.leverage ?? 2;
   battle.duration = overrides.duration ?? 10;
   battle.maxParticipants = overrides.maxParticipants ?? 2;
   battle.currentParticipants = overrides.currentParticipants ?? 2;

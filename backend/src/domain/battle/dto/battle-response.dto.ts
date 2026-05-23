@@ -12,7 +12,6 @@ export class BattleResponse {
   battleId: string;
   hostUserId: number;
   status: BattleStatus;
-  leverage: number;
   seedMoney: number;
   duration: number;
   maxParticipants: number;
@@ -28,7 +27,6 @@ export class BattleResponse {
       battleId: battle.battleId,
       hostUserId: battle.hostUserId,
       status: battle.status,
-      leverage: battle.leverage,
       seedMoney: battle.seedMoney,
       duration: battle.duration,
       maxParticipants: battle.maxParticipants,
@@ -45,7 +43,6 @@ export class BattleResponse {
 export interface BattleSummary {
   battleId: string;
   status: BattleStatus;
-  leverage: number;
   seedMoney: number;
   duration: number;
   maxParticipants: number;

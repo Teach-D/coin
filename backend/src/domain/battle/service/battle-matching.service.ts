@@ -17,7 +17,6 @@ const MATCH_QUEUE_TTL = 300;
 
 interface MatchQueueEntry {
   userId: number;
-  leverage: number;
   seedMoney: number;
   duration: number;
   maxParticipants: number;
@@ -38,7 +37,6 @@ export class BattleMatchingService {
   async enqueue(userId: number, request: MatchBattleRequest): Promise<MatchQueueResponse> {
     const entry: MatchQueueEntry = {
       userId,
-      leverage: request.leverage,
       seedMoney: request.seedMoney,
       duration: request.duration,
       maxParticipants: request.maxParticipants ?? 2,
@@ -67,7 +65,7 @@ export class BattleMatchingService {
       const groups = new Map<string, MatchQueueEntry[]>();
 
       for (const entry of entries) {
-        const key = `${entry.leverage}:${entry.seedMoney}:${entry.duration}:${entry.maxParticipants}`;
+        const key = `${entry.seedMoney}:${entry.duration}:${entry.maxParticipants}`;
         const group = groups.get(key) ?? [];
         group.push(entry);
         groups.set(key, group);
@@ -94,7 +92,6 @@ export class BattleMatchingService {
     battle.battleId = uuidv4();
     battle.hostUserId = first.userId;
     battle.userId = first.userId;
-    battle.leverage = first.leverage;
     battle.seedMoney = first.seedMoney;
     battle.duration = first.duration;
     battle.maxParticipants = first.maxParticipants;
