@@ -75,9 +75,8 @@ describe('GoogleStrategy', () => {
 
       const strategy = new GoogleStrategy(userService as any, configService);
       const profile = makeGoogleProfile();
-      const done = jest.fn();
 
-      await strategy.validate('access-token', 'refresh-token', profile, done);
+      const result = await strategy.validate('access-token', 'refresh-token', profile);
 
       expect(userService.findOrCreateSocialUser).toHaveBeenCalledTimes(1);
       expect(userService.findOrCreateSocialUser).toHaveBeenCalledWith(
@@ -87,7 +86,7 @@ describe('GoogleStrategy', () => {
         AuthProvider.GOOGLE,
         'google-sub-123456',
       );
-      expect(done).toHaveBeenCalledWith(null, newUser);
+      expect(result).toBe(newUser);
     });
 
     it('기존_유저_findOrCreateSocialUser_재사용하여_기존_User_반환', async () => {
@@ -99,13 +98,11 @@ describe('GoogleStrategy', () => {
 
       const strategy = new GoogleStrategy(userService as any, configService);
       const profile = makeGoogleProfile({ id: 'google-sub-123456' });
-      const done = jest.fn();
 
-      await strategy.validate('access-token', 'refresh-token', profile, done);
+      const result = await strategy.validate('access-token', 'refresh-token', profile);
 
       expect(userService.findOrCreateSocialUser).toHaveBeenCalledTimes(1);
-      expect(done).toHaveBeenCalledWith(null, existingUser);
-      expect((done.mock.calls[0][1] as User).id).toBe(42);
+      expect((result as User).id).toBe(42);
     });
 
     it('profile에서_email_displayName_id_올바르게_추출', async () => {
@@ -122,9 +119,8 @@ describe('GoogleStrategy', () => {
         emails: [{ value: 'hong@gmail.com' }],
         photos: [{ value: 'https://photo.example.com/hong.jpg' }],
       });
-      const done = jest.fn();
 
-      await strategy.validate('access-token', 'refresh-token', profile, done);
+      await strategy.validate('access-token', 'refresh-token', profile);
 
       expect(userService.findOrCreateSocialUser).toHaveBeenCalledWith(
         'hong@gmail.com',
@@ -144,9 +140,8 @@ describe('GoogleStrategy', () => {
 
       const strategy = new GoogleStrategy(userService as any, configService);
       const profile = makeGoogleProfile({ photos: [] });
-      const done = jest.fn();
 
-      await strategy.validate('access-token', 'refresh-token', profile, done);
+      await strategy.validate('access-token', 'refresh-token', profile);
 
       expect(userService.findOrCreateSocialUser).toHaveBeenCalledWith(
         'testuser@gmail.com',
@@ -157,7 +152,7 @@ describe('GoogleStrategy', () => {
       );
     });
 
-    it('findOrCreateSocialUser_예외_발생시_done에_에러_전달', async () => {
+    it('findOrCreateSocialUser_예외_발생시_Promise_reject', async () => {
       const serviceError = new Error('DB 연결 실패');
       const userService = makeUserServiceMock({
         findOrCreateSocialUser: jest.fn().mockRejectedValue(serviceError),
@@ -166,12 +161,8 @@ describe('GoogleStrategy', () => {
 
       const strategy = new GoogleStrategy(userService as any, configService);
       const profile = makeGoogleProfile();
-      const done = jest.fn();
 
-      await strategy.validate('access-token', 'refresh-token', profile, done);
-
-      expect(done).toHaveBeenCalledWith(serviceError);
-      expect(done.mock.calls[0][1]).toBeUndefined();
+      await expect(strategy.validate('access-token', 'refresh-token', profile)).rejects.toThrow('DB 연결 실패');
     });
   });
 });

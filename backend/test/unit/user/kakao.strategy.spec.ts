@@ -89,9 +89,8 @@ describe('KakaoStrategy', () => {
 
       const strategy = new KakaoStrategy(userService as any, configService);
       const profile = makeKakaoProfile();
-      const done = jest.fn();
 
-      await strategy.validate('access-token', 'refresh-token', profile, done);
+      const result = await strategy.validate('access-token', 'refresh-token', profile);
 
       expect(userService.findOrCreateSocialUser).toHaveBeenCalledTimes(1);
       expect(userService.findOrCreateSocialUser).toHaveBeenCalledWith(
@@ -101,7 +100,7 @@ describe('KakaoStrategy', () => {
         AuthProvider.KAKAO,
         '987654321',
       );
-      expect(done).toHaveBeenCalledWith(null, newUser);
+      expect(result).toBe(newUser);
     });
 
     it('기존_유저_findOrCreateSocialUser_재사용하여_기존_User_반환', async () => {
@@ -113,13 +112,11 @@ describe('KakaoStrategy', () => {
 
       const strategy = new KakaoStrategy(userService as any, configService);
       const profile = makeKakaoProfile({ id: '987654321' });
-      const done = jest.fn();
 
-      await strategy.validate('access-token', 'refresh-token', profile, done);
+      const result = await strategy.validate('access-token', 'refresh-token', profile);
 
       expect(userService.findOrCreateSocialUser).toHaveBeenCalledTimes(1);
-      expect(done).toHaveBeenCalledWith(null, existingUser);
-      expect((done.mock.calls[0][1] as User).id).toBe(55);
+      expect((result as User).id).toBe(55);
     });
 
     it('Kakao_profile_구조에서_id_email_nickname_올바르게_파싱', async () => {
@@ -140,9 +137,8 @@ describe('KakaoStrategy', () => {
           },
         },
       });
-      const done = jest.fn();
 
-      await strategy.validate('access-token', 'refresh-token', profile, done);
+      await strategy.validate('access-token', 'refresh-token', profile);
 
       expect(userService.findOrCreateSocialUser).toHaveBeenCalledWith(
         'specific@kakao.com',
@@ -153,7 +149,7 @@ describe('KakaoStrategy', () => {
       );
     });
 
-    it('kakao_account_email_없는_경우_빈_문자열로_처리', async () => {
+    it('kakao_account_email_없는_경우_null로_처리', async () => {
       const user = makeUser();
       const userService = makeUserServiceMock({
         findOrCreateSocialUser: jest.fn().mockResolvedValue(user),
@@ -170,9 +166,8 @@ describe('KakaoStrategy', () => {
           },
         },
       });
-      const done = jest.fn();
 
-      await strategy.validate('access-token', 'refresh-token', profile, done);
+      await strategy.validate('access-token', 'refresh-token', profile);
 
       const calledEmail = (userService.findOrCreateSocialUser as jest.Mock).mock.calls[0][0];
       expect(calledEmail === '' || calledEmail === null || calledEmail === undefined).toBe(true);
@@ -192,9 +187,8 @@ describe('KakaoStrategy', () => {
           properties: { nickname: '사진없는유저' },
         },
       });
-      const done = jest.fn();
 
-      await strategy.validate('access-token', 'refresh-token', profile, done);
+      await strategy.validate('access-token', 'refresh-token', profile);
 
       expect(userService.findOrCreateSocialUser).toHaveBeenCalledWith(
         'nophoto@kakao.com',
@@ -214,16 +208,15 @@ describe('KakaoStrategy', () => {
 
       const strategy = new KakaoStrategy(userService as any, configService);
       const profile = makeKakaoProfile({ id: 777888999 });
-      const done = jest.fn();
 
-      await strategy.validate('access-token', 'refresh-token', profile, done);
+      await strategy.validate('access-token', 'refresh-token', profile);
 
       const calledProviderId = (userService.findOrCreateSocialUser as jest.Mock).mock.calls[0][4];
       expect(typeof calledProviderId).toBe('string');
       expect(calledProviderId).toBe('777888999');
     });
 
-    it('findOrCreateSocialUser_예외_발생시_done에_에러_전달', async () => {
+    it('findOrCreateSocialUser_예외_발생시_Promise_reject', async () => {
       const serviceError = new Error('DB 저장 실패');
       const userService = makeUserServiceMock({
         findOrCreateSocialUser: jest.fn().mockRejectedValue(serviceError),
@@ -232,12 +225,8 @@ describe('KakaoStrategy', () => {
 
       const strategy = new KakaoStrategy(userService as any, configService);
       const profile = makeKakaoProfile();
-      const done = jest.fn();
 
-      await strategy.validate('access-token', 'refresh-token', profile, done);
-
-      expect(done).toHaveBeenCalledWith(serviceError);
-      expect(done.mock.calls[0][1]).toBeUndefined();
+      await expect(strategy.validate('access-token', 'refresh-token', profile)).rejects.toThrow('DB 저장 실패');
     });
   });
 });
