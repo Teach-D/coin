@@ -1,6 +1,6 @@
 export function LoginPage() {
-  const handleSocialLogin = (provider: 'google' | 'kakao') => {
-    window.location.href = `${import.meta.env.VITE_API_URL}/oauth2/authorization/${provider}`;
+  const handleGoogleLogin = () => {
+    window.location.href = `${import.meta.env.VITE_API_URL}/oauth2/authorization/google`;
   };
 
   return (
@@ -17,7 +17,7 @@ export function LoginPage() {
           <p className="text-zinc-300 text-center text-sm mb-1">소셜 로그인으로 시작하기</p>
 
           <button
-            onClick={() => handleSocialLogin('google')}
+            onClick={handleGoogleLogin}
             className="flex items-center justify-center gap-3 w-full py-3 rounded-lg bg-white text-zinc-900 font-semibold text-sm hover:bg-gray-100 transition-colors"
           >
             <svg width="20" height="20" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -27,17 +27,6 @@ export function LoginPage() {
               <path d="M43.611 20.083H42V20H24v8h11.303a11.977 11.977 0 0 1-4.087 5.571l6.19 5.238C42.021 35.851 44 30.138 44 24c0-1.341-.138-2.65-.389-3.917z" fill="#1976D2"/>
             </svg>
             Google로 계속하기
-          </button>
-
-          <button
-            onClick={() => handleSocialLogin('kakao')}
-            className="flex items-center justify-center gap-3 w-full py-3 rounded-lg font-semibold text-sm text-zinc-900 hover:brightness-95 transition-all"
-            style={{ backgroundColor: '#FEE500' }}
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path fillRule="evenodd" clipRule="evenodd" d="M12 3C6.477 3 2 6.477 2 10.818c0 2.718 1.61 5.11 4.07 6.6-.18.67-.654 2.42-.75 2.8-.116.468.172.462.36.336.148-.098 2.354-1.602 3.308-2.254.315.044.638.068.967.069H12c5.523 0 10-3.477 10-7.818S17.523 3 12 3z" fill="#3C1E1E"/>
-            </svg>
-            카카오로 계속하기
           </button>
         </div>
       </div>
