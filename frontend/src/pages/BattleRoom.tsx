@@ -5,8 +5,13 @@ import { connectSocket, getSocket } from '../lib/socket';
 import { useBattleStore } from '../store/useBattleStore';
 import { useAuthStore } from '../store/authStore';
 import { useBattleResult } from '../hooks/useBattleResult';
+import { useBattleBalance } from '../hooks/useBattleBalance';
+import { useBattlePositions } from '../hooks/useBattlePositions';
 import { BattleResultCard } from '../components/BattleResultCard';
 import { InviteButton } from '../components/battle/InviteButton';
+import { BattleBalanceCard } from '../components/battle/BattleBalanceCard';
+import { BattleOrderSection } from '../components/battle/BattleOrderSection';
+import { BattlePositionList } from '../components/battle/BattlePositionList';
 import type { BattleRankingEntry, CardReadyNotification } from '../types';
 
 function parseUserIdFromToken(token: string | null): number {
@@ -228,6 +233,8 @@ function InProgressView({
   rankings: BattleRankingEntry[];
 }) {
   const remaining = useCountdown(endTime);
+  const { data: balanceData, isLoading: isBalanceLoading } = useBattleBalance(battleId);
+  const { data: positions, isLoading: isPositionsLoading } = useBattlePositions(battleId);
 
   return (
     <motion.div
@@ -242,6 +249,19 @@ function InProgressView({
           {remaining || '--:--'}
         </span>
       </div>
+
+      <BattleBalanceCard data={balanceData} isLoading={isBalanceLoading} />
+
+      <BattleOrderSection
+        battleId={battleId}
+        battleBalance={balanceData?.battleBalance ?? 0}
+      />
+
+      <BattlePositionList
+        battleId={battleId}
+        positions={positions}
+        isLoading={isPositionsLoading}
+      />
 
       <div className="rounded-2xl border border-zinc-800 bg-zinc-900 overflow-hidden">
         <div className="flex items-center px-4 py-2 border-b border-zinc-800 text-xs text-zinc-600">

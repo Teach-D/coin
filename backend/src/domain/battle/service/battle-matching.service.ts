@@ -111,6 +111,7 @@ export class BattleMatchingService {
       session.id = uuidv4();
       session.battleId = battle.battleId;
       session.participantId = entry.userId;
+      session.battleBalance = battle.seedMoney;
       await this.battleSessionRepository.save(session);
     }
 

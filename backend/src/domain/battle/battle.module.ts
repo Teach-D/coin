@@ -7,6 +7,7 @@ import { BattleSessionRepository } from './repository/battle-session.repository'
 import { InviteCodeRedisRepository } from './repository/invite-code-redis.repository';
 import { BattleService } from './service/battle.service';
 import { BattleEndService } from './service/battle-end.service';
+import { BattleOrderService } from './service/battle-order.service';
 import { InviteService } from './service/invite.service';
 import { BattleMatchingService } from './service/battle-matching.service';
 import { BattleCardImageService } from './service/battle-card-image.service';
@@ -34,6 +35,7 @@ import { RankingModule } from '../ranking/ranking.module';
     InviteCodeRedisRepository,
     BattleService,
     BattleEndService,
+    BattleOrderService,
     InviteService,
     BattleMatchingService,
     BattleCardImageService,
@@ -43,6 +45,6 @@ import { RankingModule } from '../ranking/ranking.module';
     BattleGateway,
   ],
   controllers: [BattleController],
-  exports: [BattleSessionRepository, BattleEndService],
+  exports: [BattleSessionRepository, BattleEndService, BattleOrderService],
 })
 export class BattleModule {}

@@ -11,6 +11,9 @@ export class BattleSession {
   @Column({ name: 'participant_id', type: 'bigint', nullable: false })
   participantId: number;
 
+  @Column({ name: 'battle_balance', type: 'bigint', nullable: false, default: 0 })
+  battleBalance: number;
+
   @CreateDateColumn({ name: 'joined_at' })
   joinedAt: Date;
 

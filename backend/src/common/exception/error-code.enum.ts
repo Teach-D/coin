@@ -35,6 +35,8 @@ export enum ErrorCode {
   ALREADY_JOINED_BATTLE = 'ALREADY_JOINED_BATTLE',
   BATTLE_ALREADY_FINISHED = 'BATTLE_ALREADY_FINISHED',
   VALIDATION_FAILED = 'VALIDATION_FAILED',
+  BATTLE_POSITION_NOT_CLOSEABLE = 'BATTLE_POSITION_NOT_CLOSEABLE',
+  BATTLE_SESSION_NOT_FOUND = 'BATTLE_SESSION_NOT_FOUND',
 }
 
 export const ERROR_CODE_STATUS: Record<ErrorCode, number> = {
@@ -74,6 +76,8 @@ export const ERROR_CODE_STATUS: Record<ErrorCode, number> = {
   [ErrorCode.ALREADY_JOINED_BATTLE]: 409,
   [ErrorCode.BATTLE_ALREADY_FINISHED]: 400,
   [ErrorCode.VALIDATION_FAILED]: 400,
+  [ErrorCode.BATTLE_POSITION_NOT_CLOSEABLE]: 403,
+  [ErrorCode.BATTLE_SESSION_NOT_FOUND]: 404,
 };
 
 export const ERROR_CODE_MESSAGE: Record<ErrorCode, string> = {
@@ -113,4 +117,6 @@ export const ERROR_CODE_MESSAGE: Record<ErrorCode, string> = {
   [ErrorCode.ALREADY_JOINED_BATTLE]: '이미 이 배틀에 참가 중입니다',
   [ErrorCode.BATTLE_ALREADY_FINISHED]: '이미 종료된 배틀입니다',
   [ErrorCode.VALIDATION_FAILED]: '유효하지 않은 요청입니다',
+  [ErrorCode.BATTLE_POSITION_NOT_CLOSEABLE]: '배틀 포지션은 배틀룸에서만 청산할 수 있습니다',
+  [ErrorCode.BATTLE_SESSION_NOT_FOUND]: '배틀 세션을 찾을 수 없습니다',
 };

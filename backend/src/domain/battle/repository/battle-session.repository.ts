@@ -41,6 +41,10 @@ export class BattleSessionRepository {
     return sessions.map((s) => s.participantId);
   }
 
+  async findByParticipantAndBattle(userId: number, battleId: string): Promise<BattleSession | null> {
+    return this.repo.findOne({ where: { participantId: userId, battleId } });
+  }
+
   async save(session: BattleSession): Promise<BattleSession> {
     return this.repo.save(session);
   }
