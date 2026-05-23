@@ -82,6 +82,12 @@ export function OrderPanel({ ticker, currentPrice }: OrderPanelProps) {
     setTicker(ticker);
   }, [ticker, setTicker]);
 
+  useEffect(() => {
+    if (orderType === 'LIMIT' && !limitPrice) {
+      setLimitPrice(String(currentPrice));
+    }
+  }, [orderType]);
+
   const isLong = direction === 'LONG';
   const dirColors = isLong ? COLORS.long : COLORS.short;
   const parsedAmount = parseFloat(amount) || 0;

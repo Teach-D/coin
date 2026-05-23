@@ -47,6 +47,19 @@ export class OrderService {
       throw new CoinBattleException(ErrorCode.LIMIT_PRICE_REQUIRED);
     }
 
+    if (request.orderType === OrderType.LIMIT && request.limitPrice) {
+      const tickerData = await this.tickerRedisRepository.findByMarket(request.ticker);
+      if (!tickerData) throw new CoinBattleException(ErrorCode.TICKER_NOT_FOUND);
+      const marketPrice = Math.floor(tickerData.tradePrice);
+      const isLong = request.direction === OrderDirection.LONG;
+      if (isLong && request.limitPrice > marketPrice) {
+        throw new CoinBattleException(ErrorCode.INVALID_LIMIT_PRICE);
+      }
+      if (!isLong && request.limitPrice < marketPrice) {
+        throw new CoinBattleException(ErrorCode.INVALID_LIMIT_PRICE);
+      }
+    }
+
     const existing = await this.orderRepository.findByIdempotencyKey(request.idempotencyKey);
     if (existing) return OrderResponse.from(existing);
 
@@ -407,7 +420,6 @@ export class OrderService {
   }
 
   private async resolvePrice(ticker: string, orderType: OrderType, limitPrice?: number | null): Promise<number> {
-    if (orderType === OrderType.LIMIT && limitPrice) return limitPrice;
     const tickerData = await this.tickerRedisRepository.findByMarket(ticker);
     if (!tickerData) throw new CoinBattleException(ErrorCode.TICKER_NOT_FOUND);
     return Math.floor(tickerData.tradePrice);
