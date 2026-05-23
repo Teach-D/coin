@@ -70,6 +70,7 @@ export class Battle {
   start(): void {
     this.status = BattleStatus.IN_PROGRESS;
     this.startTime = new Date();
+    this.endTime = new Date(Date.now() + this.duration * 60 * 1000);
   }
 
   finish(winnerId: number | null = null): void {

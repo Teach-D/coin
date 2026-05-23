@@ -594,7 +594,12 @@ export function BattleRoom() {
             <InProgressView
               key="in-progress"
               battleId={currentBattle.battleId}
-              endTime={currentBattle.endTime}
+              endTime={
+                currentBattle.endTime ??
+                (currentBattle.startTime
+                  ? new Date(new Date(currentBattle.startTime).getTime() + currentBattle.duration * 60 * 1000).toISOString()
+                  : null)
+              }
               rankings={rankings}
               onExpired={() => setClientExpired(true)}
             />
