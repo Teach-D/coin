@@ -146,11 +146,13 @@ function WaitingView({
   currentParticipants,
   maxParticipants,
   participants,
+  onJoinSuccess,
 }: {
   battleId: string;
   currentParticipants: number;
   maxParticipants: number;
   participants: Array<{ userId: number; nickname: string; returnRate: number; currentValuation: number }>;
+  onJoinSuccess?: () => void;
 }) {
   const { joinBattle } = useBattleStore();
   const [loading, setLoading] = useState(false);
@@ -162,6 +164,7 @@ function WaitingView({
     setError('');
     try {
       await joinBattle(battleId);
+      onJoinSuccess?.();
     } catch {
       setError('참가에 실패했습니다. 이미 참가했거나 인원이 가득 찼습니다.');
     } finally {
@@ -580,6 +583,11 @@ export function BattleRoom() {
               currentParticipants={currentBattle.participants.length}
               maxParticipants={currentBattle.maxParticipants}
               participants={participantsList}
+              onJoinSuccess={() => {
+                fetchBattle(battleId!);
+                const s = getSocket();
+                s?.emit('joinBattleRoom', { battleId });
+              }}
             />
           )}
           {currentBattle.status === 'IN_PROGRESS' && (
