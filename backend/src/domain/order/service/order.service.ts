@@ -17,6 +17,7 @@ import {
   OrderResponse,
   PortfolioResponse,
   PositionResponse,
+  RecentOrderResponse,
 } from '../dto/order-response.dto';
 import { OrderFilledEvent } from '../event/order-filled.event';
 
@@ -177,7 +178,7 @@ export class OrderService {
 
       const position = await this.positionRepository.findById(request.positionId);
       if (!position) throw new CoinBattleException(ErrorCode.POSITION_NOT_FOUND);
-      if (position.userId !== userId) throw new CoinBattleException(ErrorCode.POSITION_NOT_OWNED);
+      if (Number(position.userId) !== userId) throw new CoinBattleException(ErrorCode.POSITION_NOT_OWNED);
       if (position.status === PositionStatus.CLOSED) throw new CoinBattleException(ErrorCode.POSITION_ALREADY_CLOSED);
 
       const closeRatio = request.closeRatio;
@@ -311,7 +312,7 @@ export class OrderService {
     return saved;
   }
 
-  async getPortfolio(userId: number): Promise<PortfolioResponse> {
+  async getPortfolio(userId: number, includeHistory = false): Promise<PortfolioResponse> {
     const user = await this.userRepository.findById(userId);
     if (!user) throw new CoinBattleException(ErrorCode.USER_NOT_FOUND);
 
@@ -333,6 +334,12 @@ export class OrderService {
     const totalPnlRate =
       totalMargin > 0 ? parseFloat(((totalPnl / totalMargin) * 100).toFixed(2)) : 0;
 
+    const recentOrders = includeHistory
+      ? (await this.orderRepository.findByUserIdOrderByCreatedAtDesc(userId))
+          .slice(0, 20)
+          .map(RecentOrderResponse.from)
+      : undefined;
+
     return {
       portfolio: {
         userId,
@@ -342,6 +349,7 @@ export class OrderService {
         totalPnlRate,
       },
       positions,
+      recentOrders,
     };
   }
 

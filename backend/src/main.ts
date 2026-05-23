@@ -1,4 +1,6 @@
 import 'reflect-metadata';
+import { types } from 'pg';
+types.setTypeParser(20, (val: string) => parseInt(val, 10));
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';

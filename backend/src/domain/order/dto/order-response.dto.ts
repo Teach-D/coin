@@ -22,8 +22,8 @@ export class OrderResponse {
 
   static from(order: Order): OrderResponse {
     return {
-      orderId: order.id,
-      userId: order.userId,
+      orderId: Number(order.id),
+      userId: Number(order.userId),
       ticker: order.ticker,
       orderType: order.orderType,
       direction: order.direction,
@@ -65,7 +65,7 @@ export class PositionResponse {
         ? parseFloat(((unrealizedPnl / position.margin) * 100).toFixed(2))
         : 0;
     return {
-      positionId: position.id,
+      positionId: Number(position.id),
       userId: position.userId,
       ticker: position.ticker,
       direction: position.direction,
@@ -84,6 +84,26 @@ export class PositionResponse {
   }
 }
 
+export class RecentOrderResponse {
+  orderId: number;
+  ticker: string;
+  side: string;
+  executedPrice: number | null;
+  amount: number | null;
+  createdAt: Date;
+
+  static from(order: Order): RecentOrderResponse {
+    return {
+      orderId: Number(order.id),
+      ticker: order.ticker,
+      side: order.side,
+      executedPrice: order.executedPrice,
+      amount: order.executedAmount,
+      createdAt: order.createdAt,
+    };
+  }
+}
+
 export class PortfolioResponse {
   portfolio: {
     userId: number;
@@ -93,6 +113,7 @@ export class PortfolioResponse {
     totalPnlRate: number;
   };
   positions: PositionResponse[];
+  recentOrders?: RecentOrderResponse[];
 }
 
 export class OrderHistoryResponse {
@@ -110,7 +131,7 @@ export class OrderHistoryResponse {
 
   static from(order: Order): OrderHistoryResponse {
     return {
-      orderId: order.id,
+      orderId: Number(order.id),
       ticker: order.ticker,
       orderType: order.orderType,
       direction: order.direction,

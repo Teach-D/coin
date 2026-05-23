@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { Request } from 'express';
 import { JwtAuthGuard } from '../../../common/guard/jwt-auth.guard';
 import { ApiResponse } from '../../../common/dto/api-response.dto';
@@ -26,9 +26,9 @@ export class OrderController {
   }
 
   @Get('portfolio')
-  async getPortfolio(@Req() req: Request) {
+  async getPortfolio(@Req() req: Request, @Query('includeHistory') includeHistory?: string) {
     const user = req.user as AuthenticatedUser;
-    const result = await this.orderService.getPortfolio(user.userId);
+    const result = await this.orderService.getPortfolio(user.userId, includeHistory === 'true');
     return ApiResponse.ok(result);
   }
 
