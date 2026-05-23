@@ -42,6 +42,7 @@ export class BattleResponse {
 
 export interface BattleSummary {
   battleId: string;
+  isHost: boolean;
   status: BattleStatus;
   seedMoney: number;
   duration: number;

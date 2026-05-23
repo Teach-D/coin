@@ -45,6 +45,10 @@ export class BattleSessionRepository {
     return this.repo.findOne({ where: { participantId: userId, battleId } });
   }
 
+  async deleteByBattleId(battleId: string): Promise<void> {
+    await this.repo.delete({ battleId });
+  }
+
   async save(session: BattleSession): Promise<BattleSession> {
     return this.repo.save(session);
   }

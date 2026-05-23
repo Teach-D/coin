@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { ChevronLeft, ChevronRight, Pencil, Check, X, Trophy, Swords, Minus } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Pencil, Check, X, Trophy, Swords, Minus, LogOut } from 'lucide-react';
 import { useUserProfile } from '../hooks/useUserProfile';
 import { useUserStats } from '../hooks/useUserStats';
 import { useUpdateProfile } from '../hooks/useUpdateProfile';
+import { useAuthStore } from '../store/authStore';
 import type { AxiosError } from 'axios';
 
 const COLORS = {
@@ -68,6 +69,7 @@ export function ProfilePage() {
   const { data: profile, isLoading: profileLoading } = useUserProfile();
   const { data: stats, isLoading: statsLoading } = useUserStats();
   const updateProfile = useUpdateProfile();
+  const clearAuth = useAuthStore((s) => s.clearAuth);
 
   const [editing, setEditing] = useState(false);
   const [nickInput, setNickInput] = useState('');
@@ -308,6 +310,21 @@ export function ProfilePage() {
             )}
           </motion.div>
         )}
+
+        <motion.button
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          whileTap={{ scale: 0.97 }}
+          onClick={() => {
+            clearAuth();
+            navigate('/login', { replace: true });
+          }}
+          className="w-full flex items-center justify-center gap-2 rounded-2xl border border-zinc-700 py-3.5 text-sm font-semibold text-zinc-400 hover:border-red-800 hover:text-red-400 transition-colors"
+        >
+          <LogOut size={16} />
+          로그아웃
+        </motion.button>
       </div>
     </div>
   );

@@ -5,14 +5,16 @@ import { useAuthStore } from '../store/authStore';
 export function OAuth2Callback() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { setTokens } = useAuthStore();
+  const { setTokens, setNickname } = useAuthStore();
 
   useEffect(() => {
     const accessToken = searchParams.get('accessToken');
     const refreshToken = searchParams.get('refreshToken');
+    const nickname = searchParams.get('nickname');
 
     if (accessToken && refreshToken) {
       setTokens(accessToken, refreshToken);
+      if (nickname) setNickname(nickname);
       navigate('/', { replace: true });
     } else {
       navigate('/login', { replace: true });

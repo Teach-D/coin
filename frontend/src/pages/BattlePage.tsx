@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
+import { Trash2 } from 'lucide-react';
 import { useBattleStore } from '../store/useBattleStore';
+import { api } from '../lib/api';
 import { getSocket, connectSocket } from '../lib/socket';
 import type { BattleListItem, CreateBattleRequest, MatchBattleRequest } from '../types';
 
@@ -55,7 +57,17 @@ function StatusBadge({ status }: { status: 'WAITING' | 'IN_PROGRESS' | 'FINISHED
   );
 }
 
-function BattleCard({ battle, onClick }: { battle: BattleListItem; onClick: () => void }) {
+function BattleCard({
+  battle,
+  isHost,
+  onClick,
+  onDelete,
+}: {
+  battle: BattleListItem;
+  isHost: boolean;
+  onClick: () => void;
+  onDelete: (e: React.MouseEvent) => void;
+}) {
   const isFull = battle.currentParticipants >= battle.maxParticipants;
   const endTimeMs = battle.startTime
     ? new Date(battle.startTime).getTime() + battle.duration * 60 * 1000
@@ -68,17 +80,27 @@ function BattleCard({ battle, onClick }: { battle: BattleListItem; onClick: () =
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.15 }}
       onClick={onClick}
-      className="flex flex-col gap-3 rounded-2xl border border-zinc-800 bg-zinc-900 p-4 cursor-pointer hover:border-zinc-600 hover:bg-zinc-800/80 transition-colors"
+      className="relative flex flex-col gap-3 rounded-2xl border border-zinc-800 bg-zinc-900 p-4 cursor-pointer hover:border-zinc-600 hover:bg-zinc-800/80 transition-colors"
     >
       <div className="flex items-center justify-between">
         <StatusBadge status={battle.status} />
-        {battle.status === 'IN_PROGRESS' && endTimeMs ? (
-          <span className={`text-xs font-mono font-semibold tabular-nums ${remainingSeconds < 60 ? 'text-red-400' : 'text-[#2DD4BF]'}`}>
-            {formatCountdown(remainingSeconds)}
-          </span>
-        ) : (
-          <span className="text-xs text-zinc-600">{battle.duration}분</span>
-        )}
+        <div className="flex items-center gap-2">
+          {battle.status === 'IN_PROGRESS' && endTimeMs ? (
+            <span className={`text-xs font-mono font-semibold tabular-nums ${remainingSeconds < 60 ? 'text-red-400' : 'text-[#2DD4BF]'}`}>
+              {formatCountdown(remainingSeconds)}
+            </span>
+          ) : (
+            <span className="text-xs text-zinc-600">{battle.duration}분</span>
+          )}
+          {isHost && battle.status === 'WAITING' && (
+            <button
+              onClick={onDelete}
+              className="p-1 rounded-md text-zinc-600 hover:text-red-400 hover:bg-red-400/10 transition-colors"
+            >
+              <Trash2 size={14} />
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="flex items-end justify-between">
@@ -454,6 +476,16 @@ export function BattlePage() {
     navigate(`/battles/${battleId}`);
   };
 
+  const handleDelete = async (e: React.MouseEvent, battleId: string) => {
+    e.stopPropagation();
+    try {
+      await api.delete(`/api/battles/${battleId}`);
+      await loadBattles(tab);
+    } catch (err) {
+      console.error('배틀 삭제 실패:', err);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#0C0C0D] text-white flex flex-col">
       <header className="sticky top-0 z-10 bg-[#0C0C0D]/95 backdrop-blur border-b border-zinc-800 px-4 py-3">
@@ -535,7 +567,9 @@ export function BattlePage() {
                 <BattleCard
                   key={battle.battleId}
                   battle={battle}
+                  isHost={battle.isHost}
                   onClick={() => navigate(`/battles/${battle.battleId}`)}
+                  onDelete={(e) => handleDelete(e, battle.battleId)}
                 />
               ))}
               {battles.length === 0 && (

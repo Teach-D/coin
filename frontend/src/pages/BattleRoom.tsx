@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { connectSocket, getSocket } from '../lib/socket';
+import { parseUserIdFromToken } from '../lib/token';
 import { useBattleStore } from '../store/useBattleStore';
 import { useAuthStore } from '../store/authStore';
 import { useBattleResult } from '../hooks/useBattleResult';
@@ -13,16 +14,6 @@ import { BattleBalanceCard } from '../components/battle/BattleBalanceCard';
 import { BattleOrderSection } from '../components/battle/BattleOrderSection';
 import { BattlePositionList } from '../components/battle/BattlePositionList';
 import type { BattleRankingEntry, CardReadyNotification } from '../types';
-
-function parseUserIdFromToken(token: string | null): number {
-  if (!token) return 0;
-  try {
-    const payload = JSON.parse(atob(token.split('.')[1]));
-    return Number(payload.sub ?? payload.userId ?? payload.id ?? 0);
-  } catch {
-    return 0;
-  }
-}
 
 function formatMoney(amount: number): string {
   if (amount >= 1_000_000) return `${(amount / 1_000_000).toFixed(1)}백만`;
@@ -448,6 +439,9 @@ export function BattleRoom() {
     const onParticipantJoined = () => {
       fetchBattle(battleId);
     };
+    const onBattleDeleted = () => {
+      navigate('/battles', { replace: true });
+    };
 
     rankUpdateHandlerRef.current = onRankUpdate;
     battleStartedHandlerRef.current = onBattleStarted;
@@ -462,6 +456,7 @@ export function BattleRoom() {
       s.on('battleStarted', onBattleStarted);
       s.on('battleFinished', onBattleFinished);
       s.on('participantJoined', onParticipantJoined);
+      s.on('battle.deleted', onBattleDeleted);
     });
 
     return () => {
@@ -471,6 +466,7 @@ export function BattleRoom() {
       if (battleStartedHandlerRef.current) s.off('battleStarted', battleStartedHandlerRef.current);
       if (battleFinishedHandlerRef.current) s.off('battleFinished', battleFinishedHandlerRef.current);
       if (participantJoinedHandlerRef.current) s.off('participantJoined', participantJoinedHandlerRef.current);
+      s.off('battle.deleted', onBattleDeleted);
       rankUpdateHandlerRef.current = null;
       battleStartedHandlerRef.current = null;
       battleFinishedHandlerRef.current = null;
