@@ -62,18 +62,17 @@ jobs:
           host: ${{ secrets.GCP_HOST }}
           username: ${{ secrets.GCP_USER }}
           key: ${{ secrets.GCP_SSH_KEY }}
-          envs: DOCKERHUB_USERNAME,DOCKERHUB_TOKEN,IMAGE_TAG,ENV_PROD
+          envs: DOCKERHUB_USERNAME,DOCKERHUB_TOKEN,ENV_PROD
           script: |
             echo "$ENV_PROD" > ~/coinbattle/.env.prod
             cd ~/coinbattle
             echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
-            IMAGE_TAG=$IMAGE_TAG docker compose -f docker-compose.prod.yml pull backend
-            IMAGE_TAG=$IMAGE_TAG docker compose -f docker-compose.prod.yml run --rm backend \
+            docker compose -f docker-compose.prod.yml pull backend
+            docker compose -f docker-compose.prod.yml run --rm backend \
               node node_modules/.bin/typeorm migration:run -d dist/common/config/database.config.js
-            IMAGE_TAG=$IMAGE_TAG docker compose -f docker-compose.prod.yml up -d --no-deps backend
+            docker compose -f docker-compose.prod.yml up -d --no-deps backend
             docker image prune -f
         env:
           DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
           DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
-          IMAGE_TAG: sha-${{ github.sha }}
           ENV_PROD: ${{ secrets.ENV_PROD }}
