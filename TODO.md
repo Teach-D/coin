@@ -202,3 +202,17 @@
 
 - [ ] `BattleRoom.tsx` — 진행 중 뷰에 코인 선택 드롭다운 + `OrderPanel` 통합, 주문 시 `battleId` 자동 주입
 - [ ] `BattleRoom.tsx` — 상단에 배틀 전용 잔고(`battleBalance`) 표시 (`GET /api/battles/:battleId/my-balance` 또는 배틀 상세 응답에 포함)
+
+## 2026-05-24
+
+### DevOps — GCP 백엔드 CI/CD (GitHub Actions + Docker)
+
+- [ ] `backend/Dockerfile` 생성 — NestJS 멀티스테이지 빌드 (`node:20-alpine` builder → runner, `npm ci --only=production` + `dist/` 복사, `EXPOSE 3000`)
+- [ ] `backend/.dockerignore` + `docker-compose.prod.yml` 생성 — `node_modules/.env/dist/test` 제외, prod 서비스 정의 (`backend`, `postgres`, `redis`) + `.env.prod` 바인드 마운트
+- [ ] GCP VM 환경 세팅 — Docker Engine + Docker Compose v2 설치, `deploy` 유저 생성 + SSH 키 등록, GitHub Secrets(`GCP_SSH_KEY`, `GCP_HOST`, `GCP_USER`) 등록
+- [ ] `.github/workflows/backend-deploy.yml` 생성 — `dev` 브랜치 push 트리거 → `docker build & push` (GitHub Container Registry) → GCP VM SSH 접속 → `docker compose -f docker-compose.prod.yml pull && up -d` 무중단 배포
+
+### DevOps — Vercel 프론트엔드 배포
+
+- [ ] `frontend/vercel.json` 생성 — SPA fallback 라우팅 (`"rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]`), Root Directory `frontend/`, Build Command `npm run build`, Output Directory `dist` 설정
+- [ ] Vercel 프로젝트 연결 + 환경변수 등록 — GitHub 저장소 import, `VITE_API_URL` (GCP 백엔드 도메인) / `VITE_WS_URL` (Socket.io 도메인) Production·Preview 분리 등록

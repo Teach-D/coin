@@ -1,0 +1,76 @@
+name: Backend Deploy
+
+on:
+  push:
+    branches: [dev]
+    paths:
+      - "backend/**"
+      - "docker-compose.prod.yml"
+      - ".github/workflows/backend-deploy.yml"
+
+env:
+  IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/coin-battle-backend
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE_NAME }}
+          tags: |
+            type=sha,prefix=sha-
+            type=raw,value=latest
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Copy docker-compose.prod.yml to GCP VM
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.GCP_HOST }}
+          username: ${{ secrets.GCP_USER }}
+          key: ${{ secrets.GCP_SSH_KEY }}
+          source: docker-compose.prod.yml
+          target: ~/coinbattle
+
+      - name: Deploy to GCP VM
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.GCP_HOST }}
+          username: ${{ secrets.GCP_USER }}
+          key: ${{ secrets.GCP_SSH_KEY }}
+          envs: DOCKERHUB_USERNAME,DOCKERHUB_TOKEN,IMAGE_TAG,ENV_PROD
+          script: |
+            echo "$ENV_PROD" > ~/coinbattle/.env.prod
+            cd ~/coinbattle
+            echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+            IMAGE_TAG=$IMAGE_TAG docker compose -f docker-compose.prod.yml pull backend
+            IMAGE_TAG=$IMAGE_TAG docker compose -f docker-compose.prod.yml run --rm backend \
+              node node_modules/.bin/typeorm migration:run -d dist/common/config/database.config.js
+            IMAGE_TAG=$IMAGE_TAG docker compose -f docker-compose.prod.yml up -d --no-deps backend
+            docker image prune -f
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+          IMAGE_TAG: sha-${{ github.sha }}
+          ENV_PROD: ${{ secrets.ENV_PROD }}
