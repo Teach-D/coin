@@ -43,6 +43,7 @@ import { OrderPanel } from '../components/OrderPanel';
 import { PortfolioWidget } from '../components/PortfolioWidget';
 import { CandleChart } from '../components/CandleChart';
 import { DrawingToolbar } from '../components/DrawingToolbar';
+import { HeaderAuthButton } from '../components/HeaderAuthButton';
 import { api } from '../lib/api';
 import type { CandleData, CandleUnit, CandleResponse, ApiResponse } from '../types';
 
@@ -225,6 +226,7 @@ export function CoinDetailPage() {
             ) : (
               <div className="h-5 w-32 bg-zinc-800 rounded animate-pulse" />
             )}
+            <HeaderAuthButton />
           </div>
         </div>
       </header>

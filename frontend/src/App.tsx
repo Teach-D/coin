@@ -45,12 +45,12 @@ export default function App() {
           <Route path="/nickname-setup" element={<NicknameSetupPage />} />
           <Route path="/privacy" element={<PrivacyPolicyPage />} />
           <Route path="/terms" element={<TermsOfServicePage />} />
-          <Route path="/" element={<AuthGuard><MarketListPage /></AuthGuard>} />
-          <Route path="/coin/:ticker" element={<AuthGuard><CoinDetailPage /></AuthGuard>} />
-          <Route path="/battles" element={<AuthGuard><BattlePage /></AuthGuard>} />
+          <Route path="/" element={<MarketListPage />} />
+          <Route path="/coin/:ticker" element={<CoinDetailPage />} />
+          <Route path="/battles" element={<BattlePage />} />
           <Route path="/battles/:battleId" element={<AuthGuard><BattleRoom /></AuthGuard>} />
-          <Route path="/ranking" element={<AuthGuard><RankingPage /></AuthGuard>} />
-          <Route path="/result/:battleId" element={<AuthGuard><BattleResultPage /></AuthGuard>} />
+          <Route path="/ranking" element={<RankingPage />} />
+          <Route path="/result/:battleId" element={<BattleResultPage />} />
           <Route path="/portfolio" element={<AuthGuard><PortfolioPage /></AuthGuard>} />
           <Route path="/profile" element={<AuthGuard><ProfilePage /></AuthGuard>} />
           <Route path="/join/:inviteCode" element={<AuthGuard><JoinByInvitePage /></AuthGuard>} />

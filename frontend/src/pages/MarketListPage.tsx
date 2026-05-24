@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useMarketTickers } from '../hooks/useMarketTickers';
 import { useTickerSubscription } from '../hooks/useTickerSubscription';
 import { useTickerStore, type Ticker } from '../store/tickerStore';
+import { HeaderAuthButton } from '../components/HeaderAuthButton';
 
 function formatPrice(price: number): string {
   return `₩${price.toLocaleString('ko-KR')}`;
@@ -128,8 +129,11 @@ export function MarketListPage() {
             실시간
           </span>
           {!isLoading && sorted.length > 0 && (
-            <span className="text-xs text-zinc-600 ml-auto">{sorted.length}개</span>
+            <span className="text-xs text-zinc-600">{sorted.length}개</span>
           )}
+          <div className="ml-auto">
+            <HeaderAuthButton />
+          </div>
         </div>
       </header>
 

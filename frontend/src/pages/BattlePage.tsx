@@ -3,7 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { Trash2 } from 'lucide-react';
 import { useBattleStore } from '../store/useBattleStore';
+import { useAuthStore } from '../store/authStore';
 import { api } from '../lib/api';
+import { HeaderAuthButton } from '../components/HeaderAuthButton';
 import type { BattleListItem, CreateBattleRequest } from '../types';
 
 type TabStatus = 'WAITING' | 'IN_PROGRESS';
@@ -280,10 +282,19 @@ function CreateBattleModal({ onClose, onCreated }: { onClose: () => void; onCrea
 export function BattlePage() {
   const navigate = useNavigate();
   const { battles = [], fetchBattles } = useBattleStore();
+  const { accessToken } = useAuthStore();
   const [tab, setTab] = useState<TabStatus>('WAITING');
   const [isLoading, setIsLoading] = useState(false);
   const [isError, setIsError] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
+
+  const requireAuth = (action: () => void) => {
+    if (!accessToken) {
+      navigate('/login');
+      return;
+    }
+    action();
+  };
   const loadBattles = async (status: TabStatus) => {
     setIsLoading(true);
     setIsError(false);
@@ -323,8 +334,9 @@ export function BattlePage() {
             배틀
           </h1>
           <div className="ml-auto flex items-center gap-2">
+            <HeaderAuthButton />
             <button
-              onClick={() => setShowCreateModal(true)}
+              onClick={() => requireAuth(() => setShowCreateModal(true))}
               className="px-3 py-1.5 rounded-xl bg-orange-500 hover:bg-orange-400 text-xs font-semibold text-white transition-colors"
             >
               방 만들기
@@ -391,7 +403,7 @@ export function BattlePage() {
                   key={battle.battleId}
                   battle={battle}
                   isHost={battle.isHost}
-                  onClick={() => navigate(`/battles/${battle.battleId}`)}
+                  onClick={() => requireAuth(() => navigate(`/battles/${battle.battleId}`))}
                   onDelete={(e) => handleDelete(e, battle.battleId)}
                 />
               ))}
@@ -402,7 +414,7 @@ export function BattlePage() {
                   </p>
                   {tab === 'WAITING' && (
                     <button
-                      onClick={() => setShowCreateModal(true)}
+                      onClick={() => requireAuth(() => setShowCreateModal(true))}
                       className="px-5 py-2 bg-orange-500 hover:bg-orange-400 text-white text-sm font-semibold rounded-xl transition-colors"
                     >
                       방 만들기

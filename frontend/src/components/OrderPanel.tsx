@@ -33,9 +33,11 @@ const QUICK_LABELS = ['25%', '50%', '75%', '100%'] as const;
 // ============================================================================
 
 import { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { Loader2 } from 'lucide-react';
 import { useOrderStore } from '../store/orderStore';
+import { useAuthStore } from '../store/authStore';
 import { useBuyOrder } from '../hooks/useOrder';
 import { usePortfolio } from '../hooks/usePortfolio';
 
@@ -61,6 +63,8 @@ function calcLiquidationPrice(
 export function OrderPanel({ ticker, currentPrice }: OrderPanelProps) {
   usePortfolio();
 
+  const navigate = useNavigate();
+  const { accessToken } = useAuthStore();
   const direction = useOrderStore((s) => s.direction);
   const orderType = useOrderStore((s) => s.orderType);
   const amount = useOrderStore((s) => s.amount);
@@ -104,6 +108,10 @@ export function OrderPanel({ ticker, currentPrice }: OrderPanelProps) {
   };
 
   const handleSubmit = () => {
+    if (!accessToken) {
+      navigate('/login');
+      return;
+    }
     if (!canSubmit) return;
     buyOrder.mutate({
       ticker,

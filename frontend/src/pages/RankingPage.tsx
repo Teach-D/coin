@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useRankingSeason, useRankingPvp, useMyRanking } from '../hooks/useRanking';
 import { useAuthStore } from '../store/authStore';
+import { HeaderAuthButton } from '../components/HeaderAuthButton';
 import type { RankingEntry, PvpRankingEntry } from '../types';
 
 type Tab = 'season' | 'pvp';
@@ -142,6 +143,9 @@ export function RankingPage() {
           <h1 className="text-lg font-extrabold bg-gradient-to-r from-orange-400 to-yellow-400 bg-clip-text text-transparent">
             랭킹
           </h1>
+          <div className="ml-auto">
+            <HeaderAuthButton />
+          </div>
         </div>
       </header>
 
