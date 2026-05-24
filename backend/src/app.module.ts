@@ -9,6 +9,7 @@ import { OrderModule } from './domain/order/order.module';
 import { BattleModule } from './domain/battle/battle.module';
 import { RankingModule } from './domain/ranking/ranking.module';
 import { RedisModule } from './common/config/redis.module';
+import { HealthController } from './common/health/health.controller';
 import { User } from './domain/user/entity/user.entity';
 import { Order } from './domain/order/entity/order.entity';
 import { Position } from './domain/order/entity/position.entity';
@@ -42,6 +43,7 @@ import { BattleSession } from './domain/battle/entity/battle-session.entity';
     BattleModule,
     RankingModule,
   ],
+  controllers: [HealthController],
   providers: [],
   exports: [],
 })
