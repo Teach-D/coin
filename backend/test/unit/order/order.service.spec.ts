@@ -53,6 +53,7 @@ function makeOrderService(overrides: Partial<{
   const positionRepo = {
     findById: jest.fn(),
     findByUserIdAndStatus: jest.fn().mockResolvedValue([]),
+    findByUserIdAndStatusExcludingBattle: jest.fn().mockResolvedValue([]),
     findAllByStatus: jest.fn().mockResolvedValue([]),
     findByUserIdAndTickerAndDirectionAndStatus: jest.fn().mockResolvedValue(null),
     save: jest.fn(),
