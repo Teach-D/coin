@@ -13,6 +13,11 @@ if (enabled) {
 export const analytics = {
   identify: (userId: string, props?: Record<string, unknown>) => {
     if (!enabled) return;
+    const aliasKey = `mp_aliased_${userId}`;
+    if (!localStorage.getItem(aliasKey)) {
+      mixpanel.alias(userId);
+      localStorage.setItem(aliasKey, '1');
+    }
     mixpanel.identify(userId);
     if (props) mixpanel.people.set(props);
   },
