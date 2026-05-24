@@ -45,7 +45,7 @@ export const ERROR_CODE_STATUS: Record<ErrorCode, number> = {
   [ErrorCode.INVALID_TOKEN]: 401,
   [ErrorCode.EXPIRED_TOKEN]: 401,
   [ErrorCode.DUPLICATE_NICKNAME]: 409,
-  [ErrorCode.TICKER_NOT_FOUND]: 404,
+  [ErrorCode.TICKER_NOT_FOUND]: 503,
   [ErrorCode.MARKET_DATA_UNAVAILABLE]: 503,
   [ErrorCode.PORTFOLIO_NOT_FOUND]: 404,
   [ErrorCode.INVALID_ORDER_AMOUNT]: 400,

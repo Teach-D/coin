@@ -31,6 +31,12 @@ export function useBattleBuyOrder(battleId: string) {
       queryClient.invalidateQueries({ queryKey: ['battle', battleId, 'balance'] });
       queryClient.invalidateQueries({ queryKey: ['battle', battleId, 'positions'] });
     },
+    onError: (error: unknown) => {
+      const message =
+        (error as { response?: { data?: { message?: string } } })?.response?.data?.message ??
+        '매수 요청에 실패했습니다.';
+      alert(message);
+    },
   });
 }
 
