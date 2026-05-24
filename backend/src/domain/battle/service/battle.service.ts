@@ -135,9 +135,12 @@ export class BattleService {
     return JoinBattleResponse.from(battle);
   }
 
-  async getBattle(battleId: string): Promise<BattleResponse> {
+  async getBattle(battleId: string, userId: number): Promise<BattleResponse> {
     const battle = await this.battleRepository.findById(battleId);
     if (!battle) throw new CoinBattleException(ErrorCode.BATTLE_NOT_FOUND);
+
+    const isParticipant = await this.battleSessionRepository.existsByParticipantIdAndBattleId(userId, battleId);
+    if (!isParticipant) throw new CoinBattleException(ErrorCode.BATTLE_ACCESS_DENIED);
 
     const participantIds = await this.battleSessionRepository.findParticipantIdsByBattleId(battleId);
     const users = await this.userRepository.findAllByIds(participantIds);

@@ -61,8 +61,10 @@ export class BattleController {
   }
 
   @Get(':battleId')
-  async getBattle(@Param('battleId') battleId: string) {
-    const result = await this.battleService.getBattle(battleId);
+  @UseGuards(JwtAuthGuard)
+  async getBattle(@Req() req: Request, @Param('battleId') battleId: string) {
+    const user = req.user as AuthenticatedUser;
+    const result = await this.battleService.getBattle(battleId, user.userId);
     return ApiResponse.ok(result);
   }
 

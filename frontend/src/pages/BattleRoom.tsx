@@ -384,6 +384,7 @@ export function BattleRoom() {
   const { accessToken } = useAuthStore();
   const [isLoading, setIsLoading] = useState(false);
   const [isError, setIsError] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('배틀 정보를 불러올 수 없습니다');
   const [showResultCard, setShowResultCard] = useState(false);
   const [cardImageUrl, setCardImageUrl] = useState<string | null>(null);
   const [clientExpired, setClientExpired] = useState(false);
@@ -400,7 +401,12 @@ export function BattleRoom() {
     setIsLoading(true);
     setIsError(false);
     fetchBattle(battleId)
-      .catch(() => setIsError(true))
+      .catch((err) => {
+        if (err?.response?.status === 403) {
+          setErrorMessage('참여하지 않은 배틀은 입장할 수 없습니다.');
+        }
+        setIsError(true);
+      })
       .finally(() => setIsLoading(false));
   }, [battleId]);
 
@@ -523,7 +529,7 @@ export function BattleRoom() {
   if (isError || !currentBattle) {
     return (
       <div className="min-h-screen bg-[#0C0C0D] flex flex-col items-center justify-center gap-4">
-        <p className="text-zinc-500 text-sm">배틀 정보를 불러올 수 없습니다</p>
+        <p className="text-zinc-500 text-sm">{errorMessage}</p>
         <button
           onClick={() => navigate('/battles')}
           className="px-5 py-2 bg-orange-500 hover:bg-orange-400 text-white text-sm font-semibold rounded-xl transition-colors"
