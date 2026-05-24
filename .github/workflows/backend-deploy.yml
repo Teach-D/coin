@@ -66,12 +66,13 @@ jobs:
           script: |
             echo "$ENV_PROD" > ~/coinbattle/.env.prod
             cd ~/coinbattle
+            set -a && source .env.prod && set +a
             echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
             docker compose -f docker-compose.prod.yml up -d postgres redis
             docker compose -f docker-compose.prod.yml pull backend
             docker compose -f docker-compose.prod.yml run --rm backend \
               node node_modules/.bin/typeorm migration:run -d dist/common/config/database.config.js
-            docker compose -f docker-compose.prod.yml up -d --no-deps backend
+            docker compose -f docker-compose.prod.yml up -d --no-deps --force-recreate backend
             docker image prune -f
         env:
           DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
