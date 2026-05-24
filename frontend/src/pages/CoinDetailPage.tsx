@@ -72,12 +72,25 @@ function toUnixSeconds(utcString: string): number {
   return Math.floor(new Date(utcString + 'Z').getTime() / 1000) + KST_OFFSET_SECONDS;
 }
 
+const SKELETON_BARS = [38, 62, 28, 75, 50, 42, 68, 33, 58, 46, 72, 38, 82, 28, 61, 48, 44, 67, 52, 57];
+
 function ChartSkeleton({ height }: { height: number }) {
   return (
-    <div
-      className="w-full animate-pulse rounded bg-zinc-800"
-      style={{ height }}
-    />
+    <div className="w-full relative bg-[#0C0C0D] overflow-hidden" style={{ height }}>
+      <div className="absolute inset-0 flex items-end pb-8 px-10 gap-[3px] opacity-[0.15]">
+        {SKELETON_BARS.map((pct, i) => (
+          <div
+            key={i}
+            className="flex-1 rounded-sm bg-zinc-400 animate-pulse"
+            style={{ height: `${pct}%`, animationDelay: `${i * 35}ms` }}
+          />
+        ))}
+      </div>
+      <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
+        <div className="w-5 h-5 rounded-full border-2 border-zinc-700 border-t-orange-400 animate-spin" />
+        <span className="text-xs text-zinc-600">차트 불러오는 중</span>
+      </div>
+    </div>
   );
 }
 
