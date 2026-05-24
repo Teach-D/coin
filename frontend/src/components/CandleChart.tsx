@@ -207,7 +207,7 @@ export function CandleChart({
     if (!containerRef.current) return;
 
     const chart = createChart(containerRef.current, {
-      width: containerRef.current.clientWidth,
+      autoSize: true,
       height,
       layout: {
         background: { color: CHART_COLORS.background },
@@ -266,25 +266,11 @@ export function CandleChart({
       el.style.display = 'block';
     });
 
-    let lastWidth = containerRef.current.clientWidth;
-    const resizeObserver = new ResizeObserver((entries) => {
-      const entry = entries[0];
-      if (!entry || !chartRef.current) return;
-      const newWidth = entry.contentRect.width;
-      chartRef.current.applyOptions({ width: newWidth });
-      if (lastWidth === 0 && newWidth > 0 && seriesRef.current) {
-        chartRef.current.timeScale().fitContent();
-      }
-      lastWidth = newWidth;
-    });
-    resizeObserver.observe(containerRef.current);
-
     return () => {
       if (rafRef.current !== null) {
         cancelAnimationFrame(rafRef.current);
         rafRef.current = null;
       }
-      resizeObserver.disconnect();
       chart.remove();
       chartRef.current = null;
       seriesRef.current = null;
