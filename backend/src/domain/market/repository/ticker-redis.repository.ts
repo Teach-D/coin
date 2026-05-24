@@ -3,7 +3,7 @@ import { RedisService } from '../../../common/config/redis.config';
 import { TickerResponse } from '../dto/ticker.dto';
 import { OrderDirection } from '../../order/entity/order.entity';
 
-const TICKER_TTL_SECONDS = 15;
+const TICKER_TTL_SECONDS = 60;
 const MARKETS_KEY = 'coin:markets';
 
 @Injectable()
