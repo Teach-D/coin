@@ -19,6 +19,10 @@ export class PositionRepository {
     return this.repo.find({ where: { userId, status } });
   }
 
+  async findByUserIdAndStatusExcludingBattle(userId: number, status: PositionStatus): Promise<Position[]> {
+    return this.repo.find({ where: { userId, status, battleId: IsNull() } });
+  }
+
   async findAllByStatus(status: PositionStatus): Promise<Position[]> {
     return this.repo.find({ where: { status } });
   }

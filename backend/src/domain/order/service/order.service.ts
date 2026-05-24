@@ -478,7 +478,7 @@ export class OrderService {
     latestPrice: number,
     latestPosition: Position,
   ): Promise<number> {
-    const openPositions = await this.positionRepository.findByUserIdAndStatus(userId, PositionStatus.OPEN);
+    const openPositions = await this.positionRepository.findByUserIdAndStatusExcludingBattle(userId, PositionStatus.OPEN);
     let totalPnl = 0;
     let totalMargin = 0;
     for (const pos of openPositions) {
