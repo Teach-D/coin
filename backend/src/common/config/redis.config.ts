@@ -10,6 +10,7 @@ export class RedisService implements OnModuleDestroy {
     this.client = new Redis({
       host: configService.get('REDIS_HOST', 'localhost'),
       port: configService.get<number>('REDIS_PORT', 6379),
+      password: configService.get<string>('REDIS_PASSWORD'),
       lazyConnect: false,
     });
   }
