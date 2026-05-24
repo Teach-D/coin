@@ -1,5 +1,8 @@
+import { useEffect } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import { AuthGuard } from './components/AuthGuard';
+import { analytics } from './lib/analytics';
+import { useAnalyticsIdentify } from './hooks/useAnalyticsIdentify';
 import { BottomNavBar } from './components/BottomNavBar';
 import { LoginPage } from './pages/LoginPage';
 import { OAuth2Callback } from './pages/OAuth2Callback';
@@ -33,8 +36,17 @@ function useShowNavBar() {
   return !HIDE_NAV_PATTERNS.some((pattern) => pattern.test(pathname));
 }
 
+function usePageTracking() {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    analytics.page(pathname);
+  }, [pathname]);
+}
+
 export default function App() {
   const showNavBar = useShowNavBar();
+  usePageTracking();
+  useAnalyticsIdentify();
 
   return (
     <div className="flex flex-col min-h-screen">

@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { v4 as uuidv4 } from 'uuid';
 import { api } from '../lib/api';
 import { useOrderStore } from '../store/orderStore';
+import { analytics } from '../lib/analytics';
 import type {
   BuyOrderRequest,
   BuyOrderResponse,
@@ -23,9 +24,17 @@ export function useBuyOrder() {
     },
     onMutate: () => setSubmitting(true),
     onSettled: () => setSubmitting(false),
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       resetForm();
       queryClient.invalidateQueries({ queryKey: ['portfolio'] });
+      analytics.track('Order Placed', {
+        side: 'BUY',
+        ticker: variables.ticker,
+        direction: variables.direction,
+        amount: variables.amount,
+        leverage: variables.leverage,
+        order_type: variables.orderType,
+      });
     },
   });
 }
@@ -46,6 +55,11 @@ export function useSellOrder() {
     onSuccess: (_data, variables) => {
       removePosition(variables.positionId);
       queryClient.invalidateQueries({ queryKey: ['portfolio'] });
+      analytics.track('Order Placed', {
+        side: 'SELL',
+        position_id: variables.positionId,
+        close_ratio: variables.closeRatio,
+      });
     },
     onError: (error: any) => {
       const message = error?.response?.data?.message ?? '청산 요청에 실패했습니다.';

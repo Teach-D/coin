@@ -1,11 +1,24 @@
+import { useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Crown, ChevronLeft } from 'lucide-react';
 import { useBattleResult } from '../hooks/useBattleResult';
+import { analytics } from '../lib/analytics';
 
 export function BattleResultPage() {
   const { battleId } = useParams<{ battleId: string }>();
   const navigate = useNavigate();
   const { data: result, isLoading } = useBattleResult(battleId, true);
+
+  useEffect(() => {
+    if (!result) return;
+    const myResult = result.participants.find((p) => p.rank !== undefined);
+    analytics.track('Battle Result Viewed', {
+      battle_id: battleId,
+      my_rank: myResult?.rank,
+      my_profit_rate: myResult?.profitRate,
+      participant_count: result.participants.length,
+    });
+  }, [result]);
 
   if (isLoading) {
     return (

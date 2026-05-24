@@ -6,6 +6,7 @@ import { useBattleStore } from '../store/useBattleStore';
 import { useAuthStore } from '../store/authStore';
 import { api } from '../lib/api';
 import { HeaderAuthButton } from '../components/HeaderAuthButton';
+import { analytics } from '../lib/analytics';
 import type { BattleListItem, CreateBattleRequest } from '../types';
 
 type TabStatus = 'WAITING' | 'IN_PROGRESS';
@@ -193,6 +194,12 @@ function CreateBattleModal({ onClose, onCreated }: { onClose: () => void; onCrea
     setError('');
     try {
       const battleId = await createBattle(form);
+      analytics.track('Battle Created', {
+        seed_money: form.seedMoney,
+        duration: form.duration,
+        max_participants: form.maxParticipants,
+        battle_id: battleId,
+      });
       onCreated(battleId);
     } catch {
       setError('배틀룸 생성에 실패했습니다');

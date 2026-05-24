@@ -25,6 +25,7 @@ const SHARE_TEXT = (rank: number, profitRate: number, finalValuation: number) =>
 import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
 import type { BattleResultResponse, ParticipantResultResponse } from '../types';
+import { analytics } from '../lib/analytics';
 
 interface BattleResultCardProps {
   result: BattleResultResponse;
@@ -136,6 +137,11 @@ export function BattleResultCard({ result, currentUserId, cardImageUrl, onClose 
           text,
           ...(cardImageUrl ? { url: cardImageUrl } : {}),
         });
+        analytics.track('Result Shared', {
+          method: 'native_share',
+          rank: myResult.rank,
+          profit_rate: myResult.profitRate,
+        });
       } catch {
         // 사용자가 취소한 경우 무시
       }
@@ -143,6 +149,11 @@ export function BattleResultCard({ result, currentUserId, cardImageUrl, onClose 
       try {
         const shareText = cardImageUrl ? `${text}\n${cardImageUrl}` : text;
         await navigator.clipboard.writeText(shareText);
+        analytics.track('Result Shared', {
+          method: 'clipboard',
+          rank: myResult.rank,
+          profit_rate: myResult.profitRate,
+        });
         alert('결과가 클립보드에 복사되었습니다!');
       } catch {
         // clipboard 접근 불가 시 무시

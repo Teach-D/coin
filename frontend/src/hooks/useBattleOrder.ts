@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { v4 as uuidv4 } from 'uuid';
 import { api } from '../lib/api';
 import { useOrderStore } from '../store/orderStore';
+import { analytics } from '../lib/analytics';
 import type {
   BuyOrderRequest,
   BuyOrderResponse,
@@ -26,10 +27,19 @@ export function useBattleBuyOrder(battleId: string) {
     },
     onMutate: () => setSubmitting(true),
     onSettled: () => setSubmitting(false),
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       resetForm();
       queryClient.invalidateQueries({ queryKey: ['battle', battleId, 'balance'] });
       queryClient.invalidateQueries({ queryKey: ['battle', battleId, 'positions'] });
+      analytics.track('Battle Order Placed', {
+        side: 'BUY',
+        battle_id: battleId,
+        ticker: variables.ticker,
+        direction: variables.direction,
+        amount: variables.amount,
+        leverage: variables.leverage,
+        order_type: variables.orderType,
+      });
     },
     onError: (error: unknown) => {
       const message =
@@ -55,9 +65,15 @@ export function useBattleSellOrder(battleId: string) {
     },
     onMutate: () => setSubmitting(true),
     onSettled: () => setSubmitting(false),
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['battle', battleId, 'balance'] });
       queryClient.invalidateQueries({ queryKey: ['battle', battleId, 'positions'] });
+      analytics.track('Battle Order Placed', {
+        side: 'SELL',
+        battle_id: battleId,
+        position_id: variables.positionId,
+        close_ratio: variables.closeRatio,
+      });
     },
     onError: (error: unknown) => {
       const message =

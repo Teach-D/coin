@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
+import { analytics } from '../lib/analytics';
 
 export function OAuth2Callback() {
   const [searchParams] = useSearchParams();
@@ -17,6 +18,7 @@ export function OAuth2Callback() {
       setTokens(accessToken, refreshToken);
       if (nickname) setNickname(nickname);
       setNicknameSet(nicknameSet);
+      analytics.track('Login', { method: 'google', nickname });
 
       if (!nicknameSet) {
         navigate('/nickname-setup', { replace: true });

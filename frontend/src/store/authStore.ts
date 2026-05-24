@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { analytics } from '../lib/analytics';
 
 interface AuthState {
   accessToken: string | null;
@@ -35,6 +36,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     localStorage.removeItem('refreshToken');
     localStorage.removeItem('nickname');
     localStorage.removeItem('nicknameSet');
+    analytics.track('Logout');
+    analytics.reset();
     set({ accessToken: null, refreshToken: null, nickname: null, nicknameSet: false });
   },
   isAuthenticated: () => !!get().accessToken,
