@@ -18,7 +18,7 @@ import { RankingModule } from '../ranking/ranking.module';
     TypeOrmModule.forFeature([Order, Position]),
     forwardRef(() => UserModule),
     MarketModule,
-    RankingModule,
+    forwardRef(() => RankingModule),
   ],
   providers: [
     OrderRepository,

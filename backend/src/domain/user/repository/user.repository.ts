@@ -22,6 +22,10 @@ export class UserRepository {
     return this.repo.exists({ where: { nickname } });
   }
 
+  async findAll(): Promise<User[]> {
+    return this.repo.find();
+  }
+
   async findAllByIds(ids: number[]): Promise<User[]> {
     if (ids.length === 0) return [];
     return this.repo.findByIds(ids);

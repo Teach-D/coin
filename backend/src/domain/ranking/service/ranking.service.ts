@@ -3,13 +3,15 @@ import { CoinBattleException } from '../../../common/exception/coin-battle.excep
 import { ErrorCode } from '../../../common/exception/error-code.enum';
 import { RedisService } from '../../../common/config/redis.config';
 import { UserRepository } from '../../user/repository/user.repository';
+import { PositionRepository } from '../../order/repository/position.repository';
+import { PositionStatus } from '../../order/entity/position.entity';
+import { TickerRedisRepository } from '../../market/repository/ticker-redis.repository';
 import {
   MyRankingResponse,
   PvpRankingEntryResponse,
   RankingEntryResponse,
 } from '../dto/ranking-response.dto';
 
-const SEASON_KEY = 'leaderboard:season';
 const DAILY_KEY = 'leaderboard:daily';
 const PVP_WINRATE_KEY = 'leaderboard:pvp-winrate';
 const PVP_STATS_KEY_PREFIX = 'pvp:stats:';
@@ -20,73 +22,81 @@ export class RankingService {
   constructor(
     private readonly redisService: RedisService,
     private readonly userRepository: UserRepository,
+    private readonly positionRepository: PositionRepository,
+    private readonly tickerRedisRepository: TickerRedisRepository,
   ) {}
 
   async updateRanking(userId: number, evaluatedValue: number): Promise<void> {
-    const score = evaluatedValue;
-    await this.redisService.client.zadd(SEASON_KEY, score, userId.toString());
-    await this.redisService.client.zadd(DAILY_KEY, score, userId.toString());
+    await this.redisService.client.zadd(DAILY_KEY, evaluatedValue, userId.toString());
   }
 
-  async getTopRankings(key: string, limit: number): Promise<RankingEntryResponse[]> {
-    const effectiveLimit = Math.min(Math.max(limit, 1), MAX_LIMIT);
-    const result = await this.redisService.client.zrevrangebyscore(
-      key,
-      '+inf',
-      '-inf',
-      'WITHSCORES',
-      'LIMIT',
-      0,
-      effectiveLimit,
-    );
+  private async buildAllUserAssets(): Promise<Array<{ userId: number; nickname: string; totalAsset: number }>> {
+    const users = await this.userRepository.findAll();
+    const allOpenPositions = await this.positionRepository.findAllByStatus(PositionStatus.OPEN);
 
-    const entries: { member: string; score: number }[] = [];
-    for (let i = 0; i < result.length; i += 2) {
-      entries.push({ member: result[i], score: parseFloat(result[i + 1]) });
+    const positionsByUser = new Map<number, typeof allOpenPositions>();
+    for (const pos of allOpenPositions) {
+      const list = positionsByUser.get(pos.userId) ?? [];
+      list.push(pos);
+      positionsByUser.set(pos.userId, list);
     }
 
-    const userIds = entries.map((e) => parseInt(e.member, 10)).filter((id) => !isNaN(id));
-    const users = await this.userRepository.findAllByIds(userIds);
-    const userMap = new Map(users.map((u) => [u.id, u]));
+    const uniqueTickers = [...new Set(allOpenPositions.map((p) => p.ticker))];
+    const tickerPrices = new Map<string, number>();
+    await Promise.all(
+      uniqueTickers.map(async (ticker) => {
+        const data = await this.tickerRedisRepository.findByMarket(ticker);
+        tickerPrices.set(ticker, data?.tradePrice ? Math.floor(data.tradePrice) : 0);
+      }),
+    );
 
-    return entries
-      .map((entry, index) => {
-        const userId = parseInt(entry.member, 10);
-        const user = userMap.get(userId);
-        if (!user) return null;
-        return {
-          rank: index + 1,
-          userId,
-          nickname: user.nickname,
-          evaluatedValue: Math.floor(entry.score),
-        };
-      })
-      .filter((e): e is RankingEntryResponse => e !== null);
+    return users.map((user) => {
+      const positions = positionsByUser.get(user.id) ?? [];
+      let totalMargin = 0;
+      let totalPnl = 0;
+      for (const pos of positions) {
+        const price = tickerPrices.get(pos.ticker) ?? pos.averagePrice;
+        totalMargin += pos.margin;
+        totalPnl += pos.unrealizedPnl(price);
+      }
+      return {
+        userId: user.id,
+        nickname: user.nickname,
+        totalAsset: user.balance + totalMargin + totalPnl,
+      };
+    });
+  }
+
+  async getSeasonRankings(limit: number): Promise<RankingEntryResponse[]> {
+    const effectiveLimit = Math.min(Math.max(limit, 1), MAX_LIMIT);
+    const entries = await this.buildAllUserAssets();
+    entries.sort((a, b) => b.totalAsset - a.totalAsset);
+    return entries.slice(0, effectiveLimit).map((entry, index) => ({
+      rank: index + 1,
+      userId: entry.userId,
+      nickname: entry.nickname,
+      evaluatedValue: Math.floor(entry.totalAsset),
+    }));
   }
 
   async getMyRanking(userId: number): Promise<MyRankingResponse> {
     const user = await this.userRepository.findById(userId);
     if (!user) throw new CoinBattleException(ErrorCode.USER_NOT_FOUND);
 
-    const userIdStr = userId.toString();
+    const entries = await this.buildAllUserAssets();
+    entries.sort((a, b) => b.totalAsset - a.totalAsset);
 
-    const seasonScore = await this.redisService.client.zscore(SEASON_KEY, userIdStr);
-    const seasonRankRaw = seasonScore !== null
-      ? await this.redisService.client.zrevrank(SEASON_KEY, userIdStr)
-      : null;
-    const seasonRank = seasonRankRaw !== null ? seasonRankRaw + 1 : null;
-
-    const dailyScore = await this.redisService.client.zscore(DAILY_KEY, userIdStr);
-    const dailyRankRaw = dailyScore !== null
-      ? await this.redisService.client.zrevrank(DAILY_KEY, userIdStr)
-      : null;
-    const dailyRank = dailyRankRaw !== null ? dailyRankRaw + 1 : null;
+    const myIndex = entries.findIndex((e) => e.userId === userId);
+    const myEntry = entries[myIndex];
 
     return {
       userId,
       nickname: user.nickname,
-      season: { rank: seasonRank, evaluatedValue: seasonScore ? Math.floor(parseFloat(seasonScore)) : 0 },
-      daily: { rank: dailyRank, evaluatedValue: dailyScore ? Math.floor(parseFloat(dailyScore)) : 0 },
+      season: {
+        rank: myIndex >= 0 ? myIndex + 1 : null,
+        evaluatedValue: myEntry ? Math.floor(myEntry.totalAsset) : 0,
+      },
+      daily: { rank: null, evaluatedValue: 0 },
     };
   }
 

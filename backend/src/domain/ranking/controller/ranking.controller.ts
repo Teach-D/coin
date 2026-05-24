@@ -5,8 +5,6 @@ import { ApiResponse } from '../../../common/dto/api-response.dto';
 import { RankingService } from '../service/ranking.service';
 import { AuthenticatedUser } from '../../user/service/jwt.strategy';
 
-const SEASON_KEY = 'leaderboard:season';
-const DAILY_KEY = 'leaderboard:daily';
 
 @Controller('api/rankings')
 export class RankingController {
@@ -14,13 +12,7 @@ export class RankingController {
 
   @Get('season')
   async getSeasonRanking(@Query('limit') limit: string = '100') {
-    const result = await this.rankingService.getTopRankings(SEASON_KEY, parseInt(limit, 10));
-    return ApiResponse.ok(result);
-  }
-
-  @Get('daily')
-  async getDailyRanking(@Query('limit') limit: string = '100') {
-    const result = await this.rankingService.getTopRankings(DAILY_KEY, parseInt(limit, 10));
+    const result = await this.rankingService.getSeasonRankings(parseInt(limit, 10));
     return ApiResponse.ok(result);
   }
 

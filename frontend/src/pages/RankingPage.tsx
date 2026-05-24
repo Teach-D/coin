@@ -1,14 +1,13 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { useRankingSeason, useRankingDaily, useRankingPvp, useMyRanking } from '../hooks/useRanking';
+import { useRankingSeason, useRankingPvp, useMyRanking } from '../hooks/useRanking';
 import { useAuthStore } from '../store/authStore';
 import type { RankingEntry, PvpRankingEntry } from '../types';
 
-type Tab = 'season' | 'daily' | 'pvp';
+type Tab = 'season' | 'pvp';
 
 const TAB_LABELS: Record<Tab, string> = {
   season: '시즌 랭킹',
-  daily: '데일리 랭킹',
   pvp: 'PVP 승률',
 };
 
@@ -90,9 +89,9 @@ function SkeletonRow() {
 
 function MyRankBar({ tab }: { tab: Tab }) {
   const isLoggedIn = useAuthStore((s) => s.isAuthenticated());
-  const { data: myRanking, isLoading } = useMyRanking(isLoggedIn && tab !== 'pvp');
+  const { data: myRanking, isLoading } = useMyRanking(isLoggedIn && tab === 'season');
 
-  if (!isLoggedIn || tab === 'pvp') return null;
+  if (!isLoggedIn || tab !== 'season') return null;
   if (isLoading) {
     return (
       <div className="sticky bottom-0 z-10 bg-zinc-900 border-t border-zinc-700 px-4 py-3 animate-pulse">
@@ -106,7 +105,7 @@ function MyRankBar({ tab }: { tab: Tab }) {
   }
   if (!myRanking) return null;
 
-  const slot = tab === 'daily' ? myRanking.daily : myRanking.season;
+  const slot = myRanking.season;
   const rankDisplay = slot.rank !== null ? `#${slot.rank}` : '미집계';
   const rankColored = slot.rank !== null;
 
@@ -131,10 +130,9 @@ export function RankingPage() {
   const [tab, setTab] = useState<Tab>('season');
 
   const seasonQuery = useRankingSeason();
-  const dailyQuery = useRankingDaily();
   const pvpQuery = useRankingPvp();
 
-  const activeQuery = tab === 'season' ? seasonQuery : tab === 'daily' ? dailyQuery : pvpQuery;
+  const activeQuery = tab === 'season' ? seasonQuery : pvpQuery;
   const isPvp = tab === 'pvp';
 
   return (
@@ -149,7 +147,7 @@ export function RankingPage() {
 
       <div className="sticky top-[57px] z-10 bg-[#0C0C0D]/95 backdrop-blur border-b border-zinc-800">
         <div className="max-w-2xl mx-auto flex">
-          {(['season', 'daily', 'pvp'] as Tab[]).map((t) => (
+          {(['season', 'pvp'] as Tab[]).map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
@@ -209,11 +207,9 @@ export function RankingPage() {
                 ? (pvpQuery.data ?? []).map((entry, index) => (
                     <PvpRankingRow key={entry.userId} entry={entry} index={index} />
                   ))
-                : (tab === 'daily' ? dailyQuery.data ?? [] : seasonQuery.data ?? []).map(
-                    (entry, index) => (
-                      <RankingRow key={entry.userId} entry={entry} index={index} />
-                    )
-                  )}
+                : (seasonQuery.data ?? []).map((entry, index) => (
+                    <RankingRow key={entry.userId} entry={entry} index={index} />
+                  ))}
               {activeQuery.data?.length === 0 && (
                 <p className="text-center py-20 text-zinc-600 text-sm">랭킹 데이터가 없습니다</p>
               )}
