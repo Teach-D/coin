@@ -88,6 +88,14 @@ export class BattleGateway implements OnGatewayConnection {
     this.broadcastToBattle(data.battleId, 'battleFinished', data);
   }
 
+  @OnEvent('socket.battle.voided')
+  handleBattleVoided(data: { battleId: string }) {
+    this.broadcastToBattle(data.battleId, 'battleVoided', {
+      ...data,
+      message: '모든 참가자가 거래를 하지 않아 배틀이 무효 처리되었습니다.',
+    });
+  }
+
   @OnEvent('socket.battle.participantJoined')
   handleParticipantJoined(data: { battleId: string; currentParticipants: number }) {
     this.broadcastToBattle(data.battleId, 'participantJoined', data);

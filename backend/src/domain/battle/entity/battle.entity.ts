@@ -13,6 +13,7 @@ export enum BattleStatus {
   WAITING = 'WAITING',
   IN_PROGRESS = 'IN_PROGRESS',
   FINISHED = 'FINISHED',
+  VOID = 'VOID',
 }
 
 @Entity('battles')
@@ -77,6 +78,11 @@ export class Battle {
     this.status = BattleStatus.FINISHED;
     this.endTime = new Date();
     this.winnerId = winnerId;
+  }
+
+  void(): void {
+    this.status = BattleStatus.VOID;
+    this.endTime = new Date();
   }
 
   addParticipant(): void {

@@ -61,6 +61,15 @@ export class BattleEndService {
     if (!startTime || startTime.getTime() > expiredBeforeMs) return;
 
     const sessions = await this.battleSessionRepository.findByBattleId(battle.battleId);
+
+    const hasAnyTrade = await this.positionRepository.existsByBattleId(battle.battleId);
+    if (!hasAnyTrade) {
+      battle.void();
+      await this.battleRepository.save(battle);
+      this.eventEmitter.emit('socket.battle.voided', { battleId: battle.battleId });
+      return;
+    }
+
     const participantIds = sessions.map((s) => s.participantId);
     const users = await this.userRepository.findAllByIds(participantIds);
     const userMap = new Map(users.map((u) => [u.id, u]));
@@ -130,7 +139,7 @@ export class BattleEndService {
     const battle = await this.battleRepository.findById(battleId);
     if (!battle) throw new CoinBattleException(ErrorCode.BATTLE_NOT_FOUND);
 
-    if (battle.status !== BattleStatus.FINISHED) {
+    if (battle.status !== BattleStatus.FINISHED && battle.status !== BattleStatus.VOID) {
       throw new CoinBattleException(ErrorCode.BATTLE_NOT_FINISHED);
     }
 

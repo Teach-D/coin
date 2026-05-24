@@ -47,6 +47,10 @@ export class PositionRepository {
     return this.repo.find({ where: { battleId, status: PositionStatus.OPEN } });
   }
 
+  async existsByBattleId(battleId: string): Promise<boolean> {
+    return this.repo.exists({ where: { battleId } });
+  }
+
   async save(position: Position): Promise<Position> {
     return this.repo.save(position);
   }
