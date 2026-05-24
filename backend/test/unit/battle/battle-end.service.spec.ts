@@ -96,6 +96,7 @@ function makeBattleEndService(overrides: {
     findByUserIdAndStatus: jest.fn().mockResolvedValue([]),
     findOpenByUserIdAndBattleId: jest.fn().mockResolvedValue([]),
     findById: jest.fn().mockResolvedValue(null),
+    existsByBattleId: jest.fn().mockResolvedValue(true),
     save: jest.fn().mockImplementation((p: any) => Promise.resolve(p)),
     ...overrides.positionRepo,
   };
