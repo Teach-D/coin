@@ -30,7 +30,7 @@ const CONTENT = {
 // END CUSTOMIZATION
 // ============================================================================
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { Swords, LogOut } from 'lucide-react';
@@ -50,6 +50,12 @@ export function NicknameSetupPage() {
   const [nickInput, setNickInput] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isPending, setIsPending] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const timer = setTimeout(() => inputRef.current?.focus(), 500);
+    return () => clearTimeout(timer);
+  }, []);
 
   if (!isAuthenticated()) {
     return <Navigate to="/login" replace />;
@@ -145,10 +151,10 @@ export function NicknameSetupPage() {
           <div className="space-y-3">
             <div>
               <input
+                ref={inputRef}
                 value={nickInput}
                 onChange={handleInput}
                 onKeyDown={handleKeyDown}
-                autoFocus
                 maxLength={20}
                 placeholder={CONTENT.placeholder}
                 disabled={isPending}
