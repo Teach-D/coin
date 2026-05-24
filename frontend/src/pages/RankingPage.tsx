@@ -110,7 +110,7 @@ function MyRankBar({ tab }: { tab: Tab }) {
   const rankColored = slot.rank !== null;
 
   return (
-    <div className="sticky bottom-0 z-10 bg-zinc-900/95 backdrop-blur border-t border-zinc-700">
+    <div className="sticky bottom-[4.75rem] z-10 bg-zinc-900/95 backdrop-blur border-t border-zinc-700">
       <div className="max-w-2xl mx-auto flex items-center px-4 py-3 gap-3">
         <span className="text-xs text-zinc-500 shrink-0">내 순위</span>
         <span className={`text-sm font-bold shrink-0 ${rankColored ? 'text-orange-400' : 'text-zinc-500'}`}>
