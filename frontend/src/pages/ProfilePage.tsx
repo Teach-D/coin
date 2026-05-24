@@ -318,7 +318,7 @@ export function ProfilePage() {
           whileTap={{ scale: 0.97 }}
           onClick={() => {
             clearAuth();
-            navigate('/login', { replace: true });
+            navigate('/', { replace: true });
           }}
           className="w-full flex items-center justify-center gap-2 rounded-2xl border border-zinc-700 py-3.5 text-sm font-semibold text-zinc-400 hover:border-red-800 hover:text-red-400 transition-colors"
         >

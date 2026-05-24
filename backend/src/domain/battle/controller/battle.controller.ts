@@ -11,6 +11,7 @@ import {
 } from '@nestjs/common';
 import { Request } from 'express';
 import { JwtAuthGuard } from '../../../common/guard/jwt-auth.guard';
+import { OptionalJwtAuthGuard } from '../../../common/guard/optional-jwt-auth.guard';
 import { ApiResponse } from '../../../common/dto/api-response.dto';
 import { BattleService } from '../service/battle.service';
 import { BattleEndService } from '../service/battle-end.service';
@@ -23,7 +24,6 @@ import { BattleStatus } from '../entity/battle.entity';
 import { AuthenticatedUser } from '../../user/service/jwt.strategy';
 
 @Controller('api/battles')
-@UseGuards(JwtAuthGuard)
 export class BattleController {
   constructor(
     private readonly battleService: BattleService,
@@ -34,6 +34,7 @@ export class BattleController {
   ) {}
 
   @Post()
+  @UseGuards(JwtAuthGuard)
   async createBattle(@Req() req: Request, @Body() body: CreateBattleRequest) {
     const user = req.user as AuthenticatedUser;
     const result = await this.battleService.createBattle(user.userId, body);
@@ -41,19 +42,20 @@ export class BattleController {
   }
 
   @Get()
+  @UseGuards(OptionalJwtAuthGuard)
   async getBattleList(
     @Req() req: Request,
     @Query('status') status: string = 'WAITING',
     @Query('page') page: string = '0',
     @Query('size') size: string = '20',
   ) {
-    const user = req.user as AuthenticatedUser;
+    const user = req.user as AuthenticatedUser | null;
     const battleStatus = (BattleStatus as any)[status] ?? BattleStatus.WAITING;
     const result = await this.battleService.getBattleList(
       battleStatus,
       parseInt(page, 10),
       parseInt(size, 10),
-      user.userId,
+      user?.userId,
     );
     return ApiResponse.ok(result);
   }
@@ -65,6 +67,7 @@ export class BattleController {
   }
 
   @Delete(':battleId')
+  @UseGuards(JwtAuthGuard)
   async deleteBattle(@Req() req: Request, @Param('battleId') battleId: string) {
     const user = req.user as AuthenticatedUser;
     await this.battleService.deleteBattle(user.userId, battleId);
@@ -72,6 +75,7 @@ export class BattleController {
   }
 
   @Post(':battleId/join')
+  @UseGuards(JwtAuthGuard)
   async joinBattle(@Req() req: Request, @Param('battleId') battleId: string) {
     const user = req.user as AuthenticatedUser;
     const result = await this.battleService.joinBattle(user.userId, battleId);
@@ -79,6 +83,7 @@ export class BattleController {
   }
 
   @Get(':battleId/result')
+  @UseGuards(JwtAuthGuard)
   async getBattleResult(@Req() req: Request, @Param('battleId') battleId: string) {
     const user = req.user as AuthenticatedUser;
     const result = await this.battleEndService.getBattleResult(battleId, user.userId);
@@ -86,6 +91,7 @@ export class BattleController {
   }
 
   @Post(':battleId/invite')
+  @UseGuards(JwtAuthGuard)
   async generateInviteCode(@Req() req: Request, @Param('battleId') battleId: string) {
     const user = req.user as AuthenticatedUser;
     const result = await this.inviteService.generateInviteCode(battleId, user.userId);
@@ -93,6 +99,7 @@ export class BattleController {
   }
 
   @Post('invite/:code/join')
+  @UseGuards(JwtAuthGuard)
   async joinByInvite(@Req() req: Request, @Param('code') code: string) {
     const user = req.user as AuthenticatedUser;
     const result = await this.inviteService.joinByInvite(code, user.userId);
@@ -100,6 +107,7 @@ export class BattleController {
   }
 
   @Post(':battleId/buy')
+  @UseGuards(JwtAuthGuard)
   async battleBuy(
     @Req() req: Request,
     @Param('battleId') battleId: string,
@@ -111,6 +119,7 @@ export class BattleController {
   }
 
   @Post(':battleId/sell')
+  @UseGuards(JwtAuthGuard)
   async battleSell(
     @Req() req: Request,
     @Param('battleId') battleId: string,
@@ -122,6 +131,7 @@ export class BattleController {
   }
 
   @Get(':battleId/my-balance')
+  @UseGuards(JwtAuthGuard)
   async getMyBalance(@Req() req: Request, @Param('battleId') battleId: string) {
     const user = req.user as AuthenticatedUser;
     const result = await this.battleOrderService.getMyBalance(user.userId, battleId);
@@ -129,6 +139,7 @@ export class BattleController {
   }
 
   @Get(':battleId/positions')
+  @UseGuards(JwtAuthGuard)
   async getBattlePositions(@Req() req: Request, @Param('battleId') battleId: string) {
     const user = req.user as AuthenticatedUser;
     const result = await this.battleOrderService.getBattlePositions(user.userId, battleId);
@@ -136,6 +147,7 @@ export class BattleController {
   }
 
   @Post('match/enqueue')
+  @UseGuards(JwtAuthGuard)
   async enqueueMatch(@Req() req: Request, @Body() body: MatchBattleRequest) {
     const user = req.user as AuthenticatedUser;
     const result = await this.battleMatchingService.enqueue(user.userId, body);
@@ -143,6 +155,7 @@ export class BattleController {
   }
 
   @Post('match/dequeue')
+  @UseGuards(JwtAuthGuard)
   async dequeueMatch(@Req() req: Request) {
     const user = req.user as AuthenticatedUser;
     await this.battleMatchingService.dequeue(user.userId);
