@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom';
+
 export function LoginPage() {
   const handleGoogleLogin = () => {
     window.location.href = `${import.meta.env.VITE_API_URL}/oauth2/authorization/google`;
@@ -5,7 +7,7 @@ export function LoginPage() {
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-[#0C0C0D]">
-      <div className="bg-zinc-900 rounded-2xl p-10 w-full max-w-sm shadow-2xl flex flex-col items-center gap-8">
+      <div className="bg-zinc-900 rounded-2xl p-8 w-full max-w-sm shadow-2xl flex flex-col items-center gap-6">
         <div className="flex flex-col items-center gap-2">
           <span className="text-4xl font-extrabold tracking-tight bg-gradient-to-r from-orange-400 to-yellow-400 bg-clip-text text-transparent">
             CoinBattle
@@ -14,7 +16,7 @@ export function LoginPage() {
         </div>
 
         <div className="w-full flex flex-col gap-3">
-          <p className="text-zinc-300 text-center text-sm mb-1">소셜 로그인으로 시작하기</p>
+          <p className="text-zinc-300 text-center text-sm">소셜 로그인으로 시작하기</p>
 
           <button
             onClick={handleGoogleLogin}
@@ -28,6 +30,39 @@ export function LoginPage() {
             </svg>
             Google로 계속하기
           </button>
+        </div>
+
+        <div className="w-full border border-zinc-800 rounded-xl p-4 flex flex-col gap-3">
+          <p className="text-zinc-400 text-xs">
+            Google 계정의 아래 정보가 CoinBattle에 공유됩니다.
+          </p>
+          <ul className="flex flex-col gap-2">
+            <li className="flex items-center gap-2.5 text-zinc-300 text-xs">
+              <svg className="shrink-0 text-zinc-500" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                <circle cx="12" cy="7" r="4"/>
+              </svg>
+              이름 및 프로필 사진
+            </li>
+            <li className="flex items-center gap-2.5 text-zinc-300 text-xs">
+              <svg className="shrink-0 text-zinc-500" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect width="20" height="16" x="2" y="4" rx="2"/>
+                <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+              </svg>
+              이메일 주소
+            </li>
+          </ul>
+          <p className="text-zinc-500 text-xs leading-relaxed">
+            CoinBattle의{' '}
+            <Link to="/privacy" className="text-orange-400 underline underline-offset-2 hover:text-orange-300">
+              개인정보처리방침
+            </Link>
+            {' '}및{' '}
+            <Link to="/terms" className="text-orange-400 underline underline-offset-2 hover:text-orange-300">
+              서비스 약관
+            </Link>
+            을 검토하세요. Google 계정에서 언제든지 변경할 수 있습니다.
+          </p>
         </div>
       </div>
     </div>

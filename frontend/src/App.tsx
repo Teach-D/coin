@@ -13,6 +13,8 @@ import { BattleResultPage } from './pages/BattleResultPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { JoinByInvitePage } from './pages/JoinByInvitePage';
 import { NicknameSetupPage } from './pages/NicknameSetupPage';
+import { PrivacyPolicyPage } from './pages/PrivacyPolicyPage';
+import { TermsOfServicePage } from './pages/TermsOfServicePage';
 
 const HIDE_NAV_PATTERNS = [
   /^\/coin\//,
@@ -22,6 +24,8 @@ const HIDE_NAV_PATTERNS = [
   /^\/login$/,
   /^\/oauth2\//,
   /^\/nickname-setup$/,
+  /^\/privacy$/,
+  /^\/terms$/,
 ];
 
 function useShowNavBar() {
@@ -39,6 +43,8 @@ export default function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/oauth2/callback" element={<OAuth2Callback />} />
           <Route path="/nickname-setup" element={<NicknameSetupPage />} />
+          <Route path="/privacy" element={<PrivacyPolicyPage />} />
+          <Route path="/terms" element={<TermsOfServicePage />} />
           <Route path="/" element={<AuthGuard><MarketListPage /></AuthGuard>} />
           <Route path="/coin/:ticker" element={<AuthGuard><CoinDetailPage /></AuthGuard>} />
           <Route path="/battles" element={<AuthGuard><BattlePage /></AuthGuard>} />
