@@ -13,8 +13,8 @@ export default new DataSource({
   username: configService.get('DB_USERNAME', 'coinbattle'),
   password: configService.get('DB_PASSWORD', 'coinbattle'),
   database: configService.get('DB_NAME', 'coinbattle'),
-  entities: ['src/**/*.entity.ts'],
-  migrations: ['migrations/*.ts'],
+  entities: [__dirname + '/../../**/*.entity.{ts,js}'],
+  migrations: [__dirname + '/../../../migrations/*.{ts,js}'],
   synchronize: false,
   logging: false,
 });

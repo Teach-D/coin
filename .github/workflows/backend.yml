@@ -95,15 +95,14 @@ jobs:
           script: |
             echo "$ENV_PROD" > ~/coinbattle/.env.prod
             cd ~/coinbattle
-            set -a && source .env.prod && set +a
             echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
 
-            docker compose -f docker-compose.prod.yml up -d postgres redis
+            docker compose --env-file .env.prod -f docker-compose.prod.yml up -d postgres redis
 
-            docker compose -f docker-compose.prod.yml pull backend
-            docker compose -f docker-compose.prod.yml run --rm backend \
+            docker compose --env-file .env.prod -f docker-compose.prod.yml pull backend
+            docker compose --env-file .env.prod -f docker-compose.prod.yml run --rm backend \
               node node_modules/.bin/typeorm migration:run -d dist/src/common/config/database.config.js
-            docker compose -f docker-compose.prod.yml up -d --no-deps --force-recreate backend
+            docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --no-deps --force-recreate backend
 
             echo "Waiting for backend to become healthy..."
             for i in $(seq 1 12); do
