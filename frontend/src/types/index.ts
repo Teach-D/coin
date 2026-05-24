@@ -206,12 +206,6 @@ export interface JoinBattleResponse {
   startTime: string;
 }
 
-export interface MatchBattleRequest {
-  seedMoney: number;
-  duration: number;
-  maxParticipants: number;
-}
-
 export interface MatchQueueResponse {
   queueKey: string;
   estimatedWaitSeconds: number;

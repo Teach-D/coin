@@ -6,33 +6,25 @@ import type {
   BattleRankingEntry,
   BattleStatus,
   CreateBattleRequest,
-  MatchBattleRequest,
 } from '../types';
 
 interface BattleStore {
   battles: BattleListItem[];
   currentBattle: BattleDetail | null;
   rankings: BattleRankingEntry[];
-  matchingStatus: 'idle' | 'queued' | 'matched';
-  queueKey: string | null;
 
   fetchBattles: (status?: string) => Promise<void>;
   fetchBattle: (battleId: string) => Promise<void>;
   createBattle: (req: CreateBattleRequest) => Promise<string>;
   joinBattle: (battleId: string) => Promise<void>;
-  enterMatchQueue: (req: MatchBattleRequest) => Promise<void>;
-  cancelMatchQueue: () => Promise<void>;
   updateRankings: (rankings: BattleRankingEntry[]) => void;
   setBattleStatus: (status: BattleStatus) => void;
-  setMatchedBattle: (battleId: string) => void;
 }
 
-export const useBattleStore = create<BattleStore>((set, get) => ({
+export const useBattleStore = create<BattleStore>((set) => ({
   battles: [],
   currentBattle: null,
   rankings: [],
-  matchingStatus: 'idle',
-  queueKey: null,
 
   fetchBattles: async (status = 'WAITING') => {
     const response = await api.get('/api/battles', { params: { status, page: 0, size: 20 } });
@@ -76,18 +68,6 @@ export const useBattleStore = create<BattleStore>((set, get) => ({
     }));
   },
 
-  enterMatchQueue: async (req) => {
-    const response = await api.post('/api/battles/match/enqueue', req);
-    set({ matchingStatus: 'queued', queueKey: response.data.data?.queueKey });
-  },
-
-  cancelMatchQueue: async () => {
-    const { queueKey } = get();
-    if (!queueKey) return;
-    await api.post('/api/battles/match/dequeue');
-    set({ matchingStatus: 'idle', queueKey: null });
-  },
-
   updateRankings: (rankings) => {
     set({ rankings });
   },
@@ -100,7 +80,4 @@ export const useBattleStore = create<BattleStore>((set, get) => ({
     }));
   },
 
-  setMatchedBattle: (battleId) => {
-    set({ matchingStatus: 'matched', queueKey: battleId });
-  },
 }));

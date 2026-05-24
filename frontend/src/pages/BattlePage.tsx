@@ -4,8 +4,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Trash2 } from 'lucide-react';
 import { useBattleStore } from '../store/useBattleStore';
 import { api } from '../lib/api';
-import { getSocket, connectSocket } from '../lib/socket';
-import type { BattleListItem, CreateBattleRequest, MatchBattleRequest } from '../types';
+import type { BattleListItem, CreateBattleRequest } from '../types';
 
 type TabStatus = 'WAITING' | 'IN_PROGRESS';
 
@@ -277,174 +276,6 @@ function CreateBattleModal({ onClose, onCreated }: { onClose: () => void; onCrea
   );
 }
 
-function MatchQueueModal({ onClose }: { onClose: () => void }) {
-  const navigate = useNavigate();
-  const { matchingStatus, queueKey, enterMatchQueue, cancelMatchQueue } = useBattleStore();
-  const [form, setForm] = useState<MatchBattleRequest>({
-    seedMoney: 1_000_000,
-    duration: 10,
-    maxParticipants: 2,
-  });
-  const [waitSeconds, setWaitSeconds] = useState(0);
-  const [elapsed, setElapsed] = useState(0);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-
-  useEffect(() => {
-    if (matchingStatus !== 'queued') return;
-    const id = setInterval(() => setElapsed((e) => e + 1), 1000);
-    return () => clearInterval(id);
-  }, [matchingStatus]);
-
-  useEffect(() => {
-    if (matchingStatus === 'matched' && queueKey) {
-      onClose();
-      navigate(`/battles/${queueKey}`);
-    }
-  }, [matchingStatus, queueKey, navigate, onClose]);
-
-  useEffect(() => {
-    if (matchingStatus !== 'queued') return;
-    const socket = getSocket();
-    if (!socket.connected) {
-      connectSocket();
-    }
-
-    const handleMatchFound = (data: { battleId: string }) => {
-      useBattleStore.getState().setMatchedBattle(data.battleId);
-    };
-
-    socket.on('matchFound', handleMatchFound);
-    return () => {
-      socket.off('matchFound', handleMatchFound);
-    };
-  }, [matchingStatus]);
-
-  const handleEnterQueue = async () => {
-    setLoading(true);
-    setError('');
-    try {
-      await enterMatchQueue(form);
-      setWaitSeconds(30);
-    } catch {
-      setError('매칭 큐 등록에 실패했습니다');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleCancel = async () => {
-    await cancelMatchQueue();
-  };
-
-  const isQueued = matchingStatus === 'queued';
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={!isQueued ? onClose : undefined} />
-      <motion.div
-        initial={{ opacity: 0, y: 40 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: 40 }}
-        transition={{ duration: 0.2 }}
-        className="relative w-full sm:max-w-md bg-zinc-900 rounded-t-3xl sm:rounded-2xl border border-zinc-800 p-6 z-10"
-      >
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-lg font-bold text-white">랜덤 매칭</h2>
-          {!isQueued && (
-            <button onClick={onClose} className="text-zinc-500 hover:text-zinc-300 text-xl leading-none">✕</button>
-          )}
-        </div>
-
-        {isQueued ? (
-          <div className="flex flex-col items-center gap-6 py-4">
-            <div className="relative">
-              <div className="w-20 h-20 rounded-full border-2 border-orange-500/30 flex items-center justify-center">
-                <motion.div
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}
-                  className="w-16 h-16 rounded-full border-2 border-transparent border-t-orange-500"
-                />
-              </div>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <span className="font-mono text-xl font-bold text-orange-400">{elapsed}s</span>
-              </div>
-            </div>
-            <div className="text-center">
-              <p className="text-white font-semibold">상대방 찾는 중...</p>
-              <p className="text-zinc-500 text-sm mt-1">
-                예상 대기 시간: {waitSeconds}초
-              </p>
-            </div>
-            <div className="w-full rounded-xl border border-zinc-800 bg-zinc-800/50 p-3 text-sm text-zinc-400 space-y-1">
-              <div className="flex justify-between">
-                <span>시드머니</span><span className="text-white font-semibold">{formatMoney(form.seedMoney)}원</span>
-              </div>
-              <div className="flex justify-between">
-                <span>배틀 시간</span><span className="text-white font-semibold">{form.duration}분</span>
-              </div>
-              <div className="flex justify-between">
-                <span>인원</span><span className="text-white font-semibold">{form.maxParticipants}명</span>
-              </div>
-            </div>
-            <button
-              onClick={handleCancel}
-              className="w-full rounded-xl border border-zinc-700 py-3 text-sm font-semibold text-zinc-400 hover:border-zinc-500 hover:text-zinc-200 transition-colors"
-            >
-              매칭 취소
-            </button>
-          </div>
-        ) : (
-          <>
-            <div className="space-y-5">
-              <div>
-                <p className="text-xs text-zinc-500 mb-2">시드머니</p>
-                <div className="flex gap-2 flex-wrap">
-                  {SEED_MONEY_OPTIONS.map((sm) => (
-                    <OptionButton key={sm} selected={form.seedMoney === sm} onClick={() => setForm((f) => ({ ...f, seedMoney: sm }))}>
-                      {formatMoney(sm)}
-                    </OptionButton>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <p className="text-xs text-zinc-500 mb-2">배틀 시간</p>
-                <div className="flex gap-2">
-                  {DURATION_OPTIONS.map((d) => (
-                    <OptionButton key={d} selected={form.duration === d} onClick={() => setForm((f) => ({ ...f, duration: d }))}>
-                      {d}분
-                    </OptionButton>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <p className="text-xs text-zinc-500 mb-2">최대 인원</p>
-                <div className="flex gap-2">
-                  {MAX_PARTICIPANTS_OPTIONS.map((mp) => (
-                    <OptionButton key={mp} selected={form.maxParticipants === mp} onClick={() => setForm((f) => ({ ...f, maxParticipants: mp }))}>
-                      {mp}명
-                    </OptionButton>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {error && <p className="mt-4 text-xs text-red-400">{error}</p>}
-
-            <motion.button
-              whileTap={{ scale: 0.97 }}
-              onClick={handleEnterQueue}
-              disabled={loading}
-              className="mt-6 w-full rounded-xl bg-orange-500 py-3.5 text-sm font-bold text-white hover:bg-orange-400 transition-colors disabled:opacity-50"
-            >
-              {loading ? '등록 중...' : '매칭 시작'}
-            </motion.button>
-          </>
-        )}
-      </motion.div>
-    </div>
-  );
-}
 
 export function BattlePage() {
   const navigate = useNavigate();
@@ -453,8 +284,6 @@ export function BattlePage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isError, setIsError] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showMatchModal, setShowMatchModal] = useState(false);
-
   const loadBattles = async (status: TabStatus) => {
     setIsLoading(true);
     setIsError(false);
@@ -494,12 +323,6 @@ export function BattlePage() {
             배틀
           </h1>
           <div className="ml-auto flex items-center gap-2">
-            <button
-              onClick={() => setShowMatchModal(true)}
-              className="px-3 py-1.5 rounded-xl border border-zinc-700 text-xs font-semibold text-zinc-300 hover:border-zinc-500 hover:text-white transition-colors"
-            >
-              랜덤 매칭
-            </button>
             <button
               onClick={() => setShowCreateModal(true)}
               className="px-3 py-1.5 rounded-xl bg-orange-500 hover:bg-orange-400 text-xs font-semibold text-white transition-colors"
@@ -595,9 +418,6 @@ export function BattlePage() {
       <AnimatePresence>
         {showCreateModal && (
           <CreateBattleModal onClose={() => setShowCreateModal(false)} onCreated={handleCreated} />
-        )}
-        {showMatchModal && (
-          <MatchQueueModal onClose={() => setShowMatchModal(false)} />
         )}
       </AnimatePresence>
     </div>
