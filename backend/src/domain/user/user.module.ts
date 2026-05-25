@@ -6,6 +6,9 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { User } from './entity/user.entity';
 import { UserRepository } from './repository/user.repository';
 import { UserService } from './service/user.service';
+import { AccountDeletionService } from './service/account-deletion.service';
+import { AccountPurgeScheduler } from './service/account-purge.scheduler';
+import { UserWithdrawnListener } from './listener/user-withdrawn.listener';
 import { JwtStrategy } from './service/jwt.strategy';
 import { GoogleStrategy } from './service/google.strategy';
 import { KakaoStrategy } from './service/kakao.strategy';
@@ -14,6 +17,7 @@ import { OAuth2Controller } from './controller/oauth2.controller';
 import { JwtProvider } from '../../common/util/jwt-provider';
 import { AesEncryptor } from '../../common/util/aes-encryptor';
 import { BattleModule } from '../battle/battle.module';
+import { OrderModule } from '../order/order.module';
 
 @Module({
   imports: [
@@ -32,8 +36,20 @@ import { BattleModule } from '../battle/battle.module';
       }),
     }),
     forwardRef(() => BattleModule),
+    forwardRef(() => OrderModule),
   ],
-  providers: [UserRepository, UserService, JwtStrategy, GoogleStrategy, KakaoStrategy, JwtProvider, AesEncryptor],
+  providers: [
+    UserRepository,
+    UserService,
+    AccountDeletionService,
+    AccountPurgeScheduler,
+    UserWithdrawnListener,
+    JwtStrategy,
+    GoogleStrategy,
+    KakaoStrategy,
+    JwtProvider,
+    AesEncryptor,
+  ],
   controllers: [AuthController, OAuth2Controller],
   exports: [UserRepository, UserService, JwtProvider, AesEncryptor, JwtModule, PassportModule],
 })

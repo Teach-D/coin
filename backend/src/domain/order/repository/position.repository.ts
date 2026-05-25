@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { IsNull, Repository } from 'typeorm';
+import { In, IsNull, Repository } from 'typeorm';
 import { Position, PositionStatus } from '../entity/position.entity';
 import { OrderDirection } from '../entity/order.entity';
 
@@ -53,6 +53,15 @@ export class PositionRepository {
 
   async existsByBattleId(battleId: string): Promise<boolean> {
     return this.repo.exists({ where: { battleId } });
+  }
+
+  async findOpenNonBattleByUserId(userId: number): Promise<Position[]> {
+    return this.repo.find({ where: { userId, status: PositionStatus.OPEN, battleId: IsNull() } });
+  }
+
+  async deleteByUserIds(userIds: number[]): Promise<void> {
+    if (userIds.length === 0) return;
+    await this.repo.delete({ userId: In(userIds) });
   }
 
   async save(position: Position): Promise<Position> {
