@@ -45,6 +45,6 @@ import { RankingModule } from '../ranking/ranking.module';
     BattleGateway,
   ],
   controllers: [BattleController],
-  exports: [BattleSessionRepository, BattleEndService, BattleOrderService],
+  exports: [BattleRepository, BattleSessionRepository, BattleEndService, BattleOrderService],
 })
 export class BattleModule {}
