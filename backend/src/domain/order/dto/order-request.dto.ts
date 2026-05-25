@@ -23,8 +23,8 @@ export class BuyOrderRequest {
   amount: number;
 
   @IsOptional()
-  @IsInt()
-  @Min(1)
+  @IsNumber()
+  @Min(0.00001)
   limitPrice?: number;
 
   @IsInt()
