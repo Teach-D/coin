@@ -4,6 +4,7 @@ import { In, Repository } from 'typeorm';
 import { BattleSession } from '../entity/battle-session.entity';
 import { BattleStatus } from '../entity/battle.entity';
 
+
 @Injectable()
 export class BattleSessionRepository {
   constructor(
@@ -47,6 +48,15 @@ export class BattleSessionRepository {
 
   async deleteByBattleId(battleId: string): Promise<void> {
     await this.repo.delete({ battleId });
+  }
+
+  async deleteByBattleIds(battleIds: string[]): Promise<void> {
+    if (battleIds.length === 0) return;
+    await this.repo.delete({ battleId: In(battleIds) });
+  }
+
+  async deleteByParticipantIdAndBattleId(participantId: number, battleId: string): Promise<void> {
+    await this.repo.delete({ participantId, battleId });
   }
 
   async save(session: BattleSession): Promise<BattleSession> {

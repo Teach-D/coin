@@ -38,6 +38,29 @@ export class BattleRepository {
     await this.repo.delete({ battleId });
   }
 
+  async findWaitingByHostUserId(hostUserId: number): Promise<Battle[]> {
+    return this.repo.find({ where: { hostUserId, status: BattleStatus.WAITING } });
+  }
+
+  async findWaitingByParticipantId(userId: number): Promise<Battle[]> {
+    return this.repo
+      .createQueryBuilder('b')
+      .innerJoin('battle_sessions', 'bs', 'bs.battle_id = b.battle_id')
+      .where('bs.participant_id = :userId', { userId })
+      .andWhere('b.status = :status', { status: BattleStatus.WAITING })
+      .andWhere('b.host_user_id != :userId', { userId })
+      .getMany();
+  }
+
+  async findInProgressByParticipantId(userId: number): Promise<Battle[]> {
+    return this.repo
+      .createQueryBuilder('b')
+      .innerJoin('battle_sessions', 'bs', 'bs.battle_id = b.battle_id')
+      .where('bs.participant_id = :userId', { userId })
+      .andWhere('b.status = :status', { status: BattleStatus.IN_PROGRESS })
+      .getMany();
+  }
+
   async save(battle: Battle): Promise<Battle> {
     return this.repo.save(battle);
   }

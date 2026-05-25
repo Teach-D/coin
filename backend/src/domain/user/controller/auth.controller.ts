@@ -1,7 +1,9 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
+  HttpCode,
   Patch,
   Post,
   Req,
@@ -12,12 +14,16 @@ import { Request, Response } from 'express';
 import { JwtAuthGuard } from '../../../common/guard/jwt-auth.guard';
 import { ApiResponse } from '../../../common/dto/api-response.dto';
 import { UserService } from '../service/user.service';
+import { AccountDeletionService } from '../service/account-deletion.service';
 import { UpdateProfileRequest, RefreshTokenRequest } from '../dto/update-profile-request.dto';
 import { AuthenticatedUser } from '../service/jwt.strategy';
 
 @Controller('api')
 export class AuthController {
-  constructor(private readonly userService: UserService) {}
+  constructor(
+    private readonly userService: UserService,
+    private readonly accountDeletionService: AccountDeletionService,
+  ) {}
 
   @Post('auth/refresh')
   async refreshToken(@Body() body: RefreshTokenRequest) {
@@ -47,5 +53,13 @@ export class AuthController {
     const user = req.user as AuthenticatedUser;
     const result = await this.userService.getUserStats(user.userId);
     return ApiResponse.ok(result);
+  }
+
+  @Delete('users/me')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(204)
+  async withdraw(@Req() req: Request): Promise<void> {
+    const user = req.user as AuthenticatedUser;
+    await this.accountDeletionService.withdraw(user.userId);
   }
 }

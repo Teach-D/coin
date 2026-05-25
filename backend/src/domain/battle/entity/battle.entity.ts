@@ -89,6 +89,12 @@ export class Battle {
     this.currentParticipants++;
   }
 
+  removeParticipant(): void {
+    if (this.currentParticipants > 0) {
+      this.currentParticipants--;
+    }
+  }
+
   assertCanDelete(requestUserId: number): void {
     if (this.hostUserId !== requestUserId) {
       throw new CoinBattleException(ErrorCode.BATTLE_NOT_HOST);

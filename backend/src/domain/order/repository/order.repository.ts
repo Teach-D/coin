@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { Order } from '../entity/order.entity';
 
 @Injectable()
@@ -33,6 +33,11 @@ export class OrderRepository {
       .andWhere('(p.battle_id IS NULL OR o.position_id IS NULL)')
       .orderBy('o.created_at', 'DESC')
       .getMany();
+  }
+
+  async deleteByUserIds(userIds: number[]): Promise<void> {
+    if (userIds.length === 0) return;
+    await this.repo.delete({ userId: In(userIds) });
   }
 
   async save(order: Order): Promise<Order> {

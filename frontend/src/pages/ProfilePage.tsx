@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { ChevronLeft, ChevronRight, Pencil, Check, X, Trophy, Swords, Minus, LogOut } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Pencil, Check, X, Trophy, Swords, Minus, LogOut, UserX } from 'lucide-react';
 import { useUserProfile } from '../hooks/useUserProfile';
 import { useUserStats } from '../hooks/useUserStats';
 import { useUpdateProfile } from '../hooks/useUpdateProfile';
+import { useDeleteAccount } from '../hooks/useDeleteAccount';
 import { useAuthStore } from '../store/authStore';
+import { DeleteAccountModal } from '../components/DeleteAccountModal';
 import type { AxiosError } from 'axios';
 
 const COLORS = {
@@ -71,9 +73,23 @@ export function ProfilePage() {
   const updateProfile = useUpdateProfile();
   const clearAuth = useAuthStore((s) => s.clearAuth);
 
+  const deleteAccount = useDeleteAccount();
+
   const [editing, setEditing] = useState(false);
   const [nickInput, setNickInput] = useState('');
   const [nickError, setNickError] = useState<string | null>(null);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  async function handleDeleteConfirm() {
+    setDeleteError(null);
+    try {
+      await deleteAccount.mutateAsync();
+    } catch (err) {
+      const axiosErr = err as AxiosError<{ message: string }>;
+      setDeleteError(axiosErr.response?.data?.message ?? '탈퇴 처리 중 오류가 발생했습니다');
+    }
+  }
 
   function handleEditStart() {
     setNickInput(profile?.nickname ?? '');
@@ -325,7 +341,35 @@ export function ProfilePage() {
           <LogOut size={16} />
           로그아웃
         </motion.button>
+
+        <motion.button
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.25 }}
+          whileTap={{ scale: 0.97 }}
+          onClick={() => {
+            setDeleteError(null);
+            setDeleteModalOpen(true);
+          }}
+          className="w-full flex items-center justify-center gap-2 rounded-2xl border border-red-900 py-3.5 text-sm font-semibold text-red-500 hover:bg-red-500/10 transition-colors"
+        >
+          <UserX size={16} />
+          회원탈퇴
+        </motion.button>
+
+        {deleteError && (
+          <p className="text-xs text-center" style={{ color: '#f87171' }}>
+            {deleteError}
+          </p>
+        )}
       </div>
+
+      <DeleteAccountModal
+        open={deleteModalOpen}
+        isPending={deleteAccount.isPending}
+        onCancel={() => setDeleteModalOpen(false)}
+        onConfirm={handleDeleteConfirm}
+      />
     </div>
   );
 }

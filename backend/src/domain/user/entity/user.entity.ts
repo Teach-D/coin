@@ -38,8 +38,8 @@ export class User {
   @Column({ type: 'varchar', length: 20, nullable: false })
   provider: AuthProvider;
 
-  @Column({ type: 'varchar', nullable: false, name: 'provider_id' })
-  providerId: string;
+  @Column({ type: 'varchar', nullable: true, name: 'provider_id' })
+  providerId: string | null;
 
   @Column({ type: 'varchar', length: 20, nullable: false, default: UserRole.ROLE_USER })
   role: UserRole;
@@ -55,6 +55,21 @@ export class User {
 
   @UpdateDateColumn({ name: 'updated_at' })
   updatedAt: Date;
+
+  @Column({ type: 'timestamptz', nullable: true, name: 'deleted_at', default: null })
+  deletedAt: Date | null = null;
+
+  withdraw(): void {
+    this.email = null;
+    this.profileImageUrl = null;
+    this.providerId = null;
+    this.nickname = `(탈퇴한 사용자)-${this.id}`;
+    this.deletedAt = new Date();
+  }
+
+  isWithdrawn(): boolean {
+    return this.deletedAt !== null;
+  }
 
   encryptEmail(encryptor: AesEncryptor): void {
     if (this.email !== null) {
