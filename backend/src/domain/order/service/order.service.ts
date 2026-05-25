@@ -340,7 +340,7 @@ export class OrderService {
     const user = await this.userRepository.findById(userId);
     if (!user) throw new CoinBattleException(ErrorCode.USER_NOT_FOUND);
 
-    const openPositions = await this.positionRepository.findByUserIdAndStatus(userId, PositionStatus.OPEN);
+    const openPositions = await this.positionRepository.findByUserIdAndStatusExcludingBattle(userId, PositionStatus.OPEN);
     const positions: PositionResponse[] = [];
     let totalPnl = 0;
     let totalMargin = 0;
@@ -359,7 +359,7 @@ export class OrderService {
       totalMargin > 0 ? parseFloat(((totalPnl / totalMargin) * 100).toFixed(2)) : 0;
 
     const recentOrders = includeHistory
-      ? (await this.orderRepository.findByUserIdOrderByCreatedAtDesc(userId))
+      ? (await this.orderRepository.findByUserIdExcludingBattleOrderByCreatedAtDesc(userId))
           .slice(0, 20)
           .map(RecentOrderResponse.from)
       : undefined;
@@ -378,7 +378,7 @@ export class OrderService {
   }
 
   async getOrderHistory(userId: number): Promise<OrderHistoryResponse[]> {
-    const orders = await this.orderRepository.findByUserIdOrderByCreatedAtDesc(userId);
+    const orders = await this.orderRepository.findByUserIdExcludingBattleOrderByCreatedAtDesc(userId);
     return orders.map(OrderHistoryResponse.from);
   }
 

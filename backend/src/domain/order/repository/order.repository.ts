@@ -25,6 +25,16 @@ export class OrderRepository {
     });
   }
 
+  async findByUserIdExcludingBattleOrderByCreatedAtDesc(userId: number): Promise<Order[]> {
+    return this.repo
+      .createQueryBuilder('o')
+      .leftJoin('positions', 'p', 'o.position_id = p.id')
+      .where('o.user_id = :userId', { userId })
+      .andWhere('(p.battle_id IS NULL OR o.position_id IS NULL)')
+      .orderBy('o.created_at', 'DESC')
+      .getMany();
+  }
+
   async save(order: Order): Promise<Order> {
     return this.repo.save(order);
   }

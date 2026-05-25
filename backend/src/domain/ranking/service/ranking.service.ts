@@ -32,7 +32,7 @@ export class RankingService {
 
   private async buildAllUserAssets(): Promise<Array<{ userId: number; nickname: string; totalAsset: number }>> {
     const users = await this.userRepository.findAll();
-    const allOpenPositions = await this.positionRepository.findAllByStatus(PositionStatus.OPEN);
+    const allOpenPositions = await this.positionRepository.findAllByStatusExcludingBattle(PositionStatus.OPEN);
 
     const positionsByUser = new Map<number, typeof allOpenPositions>();
     for (const pos of allOpenPositions) {
