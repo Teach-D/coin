@@ -28,7 +28,7 @@ function makeRankingService(overrides: Partial<{
     ...overrides.userRepo,
   } as any as UserRepository;
   const positionRepo = {
-    findAllByStatus: jest.fn().mockResolvedValue([]),
+    findAllByStatusExcludingBattle: jest.fn().mockResolvedValue([]),
     ...overrides.positionRepo,
   } as any as PositionRepository;
   const tickerRepo = {
@@ -80,7 +80,7 @@ describe('RankingService', () => {
         ]),
       };
       const positionRepo = {
-        findAllByStatus: jest.fn().mockResolvedValue([
+        findAllByStatusExcludingBattle: jest.fn().mockResolvedValue([
           {
             userId: 1,
             ticker: 'KRW-BTC',
