@@ -133,7 +133,7 @@ export function TermsOfServicePage() {
             <h2 className="text-base font-semibold text-white mb-3">9. 문의</h2>
             <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 text-zinc-400">
               <p>운영자: 김동현</p>
-              <p>이메일: wkadht0619@gmail.com</p>
+              <p>이메일: coinbattle123@gmail.com</p>
             </div>
           </section>
         </div>

@@ -103,7 +103,7 @@ export function PrivacyPolicyPage() {
               </li>
             </ul>
             <p className="text-zinc-500 mt-3">
-              권리 행사는 프로필 설정 또는 이메일(wkadht0619@gmail.com)을 통해 요청하실 수 있습니다.
+              권리 행사는 프로필 설정 또는 이메일(coinbattle123@gmail.com)을 통해 요청하실 수 있습니다.
             </p>
           </section>
 
@@ -111,7 +111,7 @@ export function PrivacyPolicyPage() {
             <h2 className="text-base font-semibold text-white mb-3">6. 개인정보 보호책임자</h2>
             <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 text-zinc-400">
               <p>책임자: 김동현</p>
-              <p>이메일: wkadht0619@gmail.com</p>
+              <p>이메일: coinbattle123@gmail.com</p>
             </div>
           </section>
 
