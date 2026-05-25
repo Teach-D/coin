@@ -24,7 +24,7 @@ const HIDE_NAV_PATTERNS = [
   /^\/battles\/.+/,
   /^\/result\//,
   /^\/join\//,
-  /^\/oauth2\//,
+  /^\/auth\/callback$/,
   /^\/nickname-setup$/,
   /^\/privacy$/,
   /^\/terms$/,
@@ -52,7 +52,7 @@ export default function App() {
       <main className={showNavBar ? 'flex-1 pb-16' : 'flex-1'}>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
-          <Route path="/oauth2/callback" element={<OAuth2Callback />} />
+          <Route path="/auth/callback" element={<OAuth2Callback />} />
           <Route path="/nickname-setup" element={<NicknameSetupPage />} />
           <Route path="/privacy" element={<PrivacyPolicyPage />} />
           <Route path="/terms" element={<TermsOfServicePage />} />
