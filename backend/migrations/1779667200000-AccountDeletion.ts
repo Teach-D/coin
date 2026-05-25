@@ -1,7 +1,7 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class AccountDeletion1700000008 implements MigrationInterface {
-  name = 'AccountDeletion1700000008';
+export class AccountDeletion1779667200000 implements MigrationInterface {
+  name = 'AccountDeletion1779667200000';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "deleted_at" TIMESTAMPTZ NULL`);
