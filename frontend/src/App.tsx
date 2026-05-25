@@ -24,7 +24,6 @@ const HIDE_NAV_PATTERNS = [
   /^\/battles\/.+/,
   /^\/result\//,
   /^\/join\//,
-  /^\/login$/,
   /^\/oauth2\//,
   /^\/nickname-setup$/,
   /^\/privacy$/,
