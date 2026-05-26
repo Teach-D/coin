@@ -34,7 +34,7 @@ const CANDLE_UNITS = [
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { ChevronLeft } from 'lucide-react';
+import { ChevronLeft, Lock } from 'lucide-react';
 import { useTickerStore } from '../store/tickerStore';
 import { useAuthStore } from '../store/authStore';
 import { useTickerSubscription } from '../hooks/useTickerSubscription';
@@ -96,17 +96,33 @@ function ChartSkeleton({ height }: { height: number }) {
   );
 }
 
-function LoginPrompt() {
+function LoginModal({ onClose }: { onClose: () => void }) {
   const navigate = useNavigate();
   return (
-    <div className="flex flex-col items-center justify-center gap-4 py-10 rounded-2xl border border-zinc-800 bg-zinc-900">
-      <p className="text-zinc-400 text-sm">주문하려면 로그인이 필요합니다</p>
-      <button
-        onClick={() => navigate('/login')}
-        className="px-5 py-2.5 rounded-xl bg-orange-500 hover:bg-orange-400 text-white text-sm font-semibold transition-colors"
+    <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={onClose}>
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+      <motion.div
+        initial={{ opacity: 0, scale: 0.92, y: 8 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.92, y: 8 }}
+        transition={{ duration: 0.18 }}
+        className="relative z-10 bg-zinc-900 border border-zinc-700 rounded-2xl p-6 w-72 flex flex-col items-center gap-4 shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
       >
-        로그인하기
-      </button>
+        <div className="w-12 h-12 rounded-full bg-orange-500/10 border border-orange-500/20 flex items-center justify-center">
+          <Lock className="w-5 h-5 text-orange-400" />
+        </div>
+        <div className="text-center">
+          <p className="text-white font-semibold text-base">로그인이 필요합니다</p>
+          <p className="text-zinc-400 text-sm mt-1">주문을 하려면 먼저 로그인해 주세요</p>
+        </div>
+        <button
+          onClick={() => navigate('/login')}
+          className="w-full py-2.5 rounded-xl bg-orange-500 hover:bg-orange-400 text-white text-sm font-semibold transition-colors"
+        >
+          로그인하기
+        </button>
+      </motion.div>
     </div>
   );
 }
@@ -116,6 +132,7 @@ export function CoinDetailPage() {
   const navigate = useNavigate();
   const { accessToken } = useAuthStore();
   const [activeTab, setActiveTab] = useState<MobileTab>('order');
+  const [showLoginModal, setShowLoginModal] = useState(false);
   const [candleUnit, setCandleUnit] = useState<CandleUnit>(1);
   const [candles, setCandles] = useState<CandleData[]>([]);
   const [candlesLoading, setCandlesLoading] = useState(true);
@@ -291,65 +308,71 @@ export function CoinDetailPage() {
           </div>
         </motion.div>
 
-        {accessToken ? (
-          <>
-            <div className="hidden md:grid md:grid-cols-5 gap-4">
-              <div className="md:col-span-3">
+        <div className="hidden md:grid md:grid-cols-5 gap-4">
+          <div className="md:col-span-3">
+            <PortfolioWidget />
+          </div>
+          <div className="md:col-span-2">
+            <OrderPanel
+              ticker={ticker}
+              currentPrice={currentPrice}
+              onLoginRequired={() => setShowLoginModal(true)}
+            />
+          </div>
+        </div>
+
+        <div className="md:hidden">
+          <div className="flex border-b border-zinc-800 mb-4">
+            <button
+              onClick={() => setActiveTab('order')}
+              className={`flex-1 py-2.5 text-sm font-semibold transition-colors ${
+                activeTab === 'order' ? COLORS.tabActive : COLORS.tabInactive
+              }`}
+            >
+              주문
+            </button>
+            <button
+              onClick={() => setActiveTab('position')}
+              className={`flex-1 py-2.5 text-sm font-semibold transition-colors ${
+                activeTab === 'position' ? COLORS.tabActive : COLORS.tabInactive
+              }`}
+            >
+              포지션
+            </button>
+          </div>
+
+          <AnimatePresence mode="wait">
+            {activeTab === 'order' ? (
+              <motion.div
+                key="order"
+                initial={{ opacity: 0, x: -12 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 12 }}
+                transition={{ duration: 0.18 }}
+              >
+                <OrderPanel
+                  ticker={ticker}
+                  currentPrice={currentPrice}
+                  onLoginRequired={() => setShowLoginModal(true)}
+                />
+              </motion.div>
+            ) : (
+              <motion.div
+                key="position"
+                initial={{ opacity: 0, x: 12 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -12 }}
+                transition={{ duration: 0.18 }}
+              >
                 <PortfolioWidget />
-              </div>
-              <div className="md:col-span-2">
-                <OrderPanel ticker={ticker} currentPrice={currentPrice} />
-              </div>
-            </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
 
-            <div className="md:hidden">
-              <div className="flex border-b border-zinc-800 mb-4">
-                <button
-                  onClick={() => setActiveTab('order')}
-                  className={`flex-1 py-2.5 text-sm font-semibold transition-colors ${
-                    activeTab === 'order' ? COLORS.tabActive : COLORS.tabInactive
-                  }`}
-                >
-                  주문
-                </button>
-                <button
-                  onClick={() => setActiveTab('position')}
-                  className={`flex-1 py-2.5 text-sm font-semibold transition-colors ${
-                    activeTab === 'position' ? COLORS.tabActive : COLORS.tabInactive
-                  }`}
-                >
-                  포지션
-                </button>
-              </div>
-
-              <AnimatePresence mode="wait">
-                {activeTab === 'order' ? (
-                  <motion.div
-                    key="order"
-                    initial={{ opacity: 0, x: -12 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: 12 }}
-                    transition={{ duration: 0.18 }}
-                  >
-                    <OrderPanel ticker={ticker} currentPrice={currentPrice} />
-                  </motion.div>
-                ) : (
-                  <motion.div
-                    key="position"
-                    initial={{ opacity: 0, x: 12 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -12 }}
-                    transition={{ duration: 0.18 }}
-                  >
-                    <PortfolioWidget />
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-          </>
-        ) : (
-          <LoginPrompt />
-        )}
+        <AnimatePresence>
+          {showLoginModal && <LoginModal onClose={() => setShowLoginModal(false)} />}
+        </AnimatePresence>
       </main>
     </div>
   );

@@ -33,7 +33,6 @@ const QUICK_LABELS = ['25%', '50%', '75%', '100%'] as const;
 // ============================================================================
 
 import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { Loader2 } from 'lucide-react';
 import { useOrderStore } from '../store/orderStore';
@@ -44,6 +43,7 @@ import { usePortfolio } from '../hooks/usePortfolio';
 interface OrderPanelProps {
   ticker: string;
   currentPrice: number;
+  onLoginRequired?: () => void;
 }
 
 const formatKRW = (n: number) => new Intl.NumberFormat('ko-KR').format(Math.round(n));
@@ -60,10 +60,9 @@ function calcLiquidationPrice(
     : currentPrice * (1 + ratio);
 }
 
-export function OrderPanel({ ticker, currentPrice }: OrderPanelProps) {
+export function OrderPanel({ ticker, currentPrice, onLoginRequired }: OrderPanelProps) {
   usePortfolio();
 
-  const navigate = useNavigate();
   const { accessToken } = useAuthStore();
   const direction = useOrderStore((s) => s.direction);
   const orderType = useOrderStore((s) => s.orderType);
@@ -109,7 +108,7 @@ export function OrderPanel({ ticker, currentPrice }: OrderPanelProps) {
 
   const handleSubmit = () => {
     if (!accessToken) {
-      navigate('/login');
+      onLoginRequired?.();
       return;
     }
     if (!canSubmit) return;
@@ -271,7 +270,7 @@ export function OrderPanel({ ticker, currentPrice }: OrderPanelProps) {
         whileHover={canSubmit ? { scale: 1.02 } : {}}
         whileTap={canSubmit ? { scale: 0.98 } : {}}
         onClick={handleSubmit}
-        disabled={!canSubmit}
+        disabled={!!accessToken && !canSubmit}
         className={`w-full py-3.5 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none ${dirColors.button}`}
       >
         {isSubmitting ? (
