@@ -36,7 +36,6 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { ChevronLeft, Lock } from 'lucide-react';
 import { useTickerStore } from '../store/tickerStore';
-import { useAuthStore } from '../store/authStore';
 import { useTickerSubscription } from '../hooks/useTickerSubscription';
 import { useCandleSubscription } from '../hooks/useCandleSubscription';
 import { useDrawingTool } from '../hooks/useDrawingTool';
@@ -130,7 +129,6 @@ function LoginModal({ onClose }: { onClose: () => void }) {
 export function CoinDetailPage() {
   const { ticker = '' } = useParams<{ ticker: string }>();
   const navigate = useNavigate();
-  const { accessToken } = useAuthStore();
   const [activeTab, setActiveTab] = useState<MobileTab>('order');
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [candleUnit, setCandleUnit] = useState<CandleUnit>(1);
