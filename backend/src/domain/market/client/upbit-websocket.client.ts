@@ -6,11 +6,16 @@ import { TickerPubSubPublisher } from '../service/ticker-pubsub.service';
 import { TradeCandleService } from '../service/trade-candle.service';
 import { ChangeType, TickerResponse } from '../dto/ticker.dto';
 
+const WATCHDOG_INTERVAL_MS = 30_000;
+const WATCHDOG_STALE_MS = 60_000;
+
 @Injectable()
 export class UpbitWebSocketClient implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(UpbitWebSocketClient.name);
   private ws: WebSocket | null = null;
   private reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
+  private watchdogInterval: ReturnType<typeof setInterval> | null = null;
+  private lastMessageAt = 0;
   private destroyed = false;
   private readonly reconnectDelays = [1000, 2000, 4000, 8000, 16000, 30000];
   private attempt = 0;
@@ -28,6 +33,7 @@ export class UpbitWebSocketClient implements OnModuleInit, OnModuleDestroy {
   onModuleDestroy() {
     this.destroyed = true;
     if (this.reconnectTimeout) clearTimeout(this.reconnectTimeout);
+    this.stopWatchdog();
     this.ws?.close();
   }
 
@@ -46,11 +52,14 @@ export class UpbitWebSocketClient implements OnModuleInit, OnModuleDestroy {
 
     this.ws.on('open', () => {
       this.attempt = 0;
+      this.lastMessageAt = Date.now();
       this.logger.log(`업비트 WebSocket 연결 — 마켓 ${markets.length}개`);
       this.ws!.send(payload);
+      this.startWatchdog();
     });
 
     this.ws.on('message', (data: Buffer) => {
+      this.lastMessageAt = Date.now();
       this.handleMessage(data.toString('utf8'));
     });
 
@@ -59,11 +68,29 @@ export class UpbitWebSocketClient implements OnModuleInit, OnModuleDestroy {
     });
 
     this.ws.on('close', () => {
+      this.stopWatchdog();
       if (!this.destroyed) {
         this.logger.warn('업비트 WebSocket 연결 종료 — 재연결 예약');
         this.scheduleReconnect();
       }
     });
+  }
+
+  private startWatchdog() {
+    this.stopWatchdog();
+    this.watchdogInterval = setInterval(() => {
+      if (Date.now() - this.lastMessageAt > WATCHDOG_STALE_MS) {
+        this.logger.warn('업비트 WebSocket 무응답 감지 — 강제 재연결');
+        this.ws?.terminate();
+      }
+    }, WATCHDOG_INTERVAL_MS);
+  }
+
+  private stopWatchdog() {
+    if (this.watchdogInterval) {
+      clearInterval(this.watchdogInterval);
+      this.watchdogInterval = null;
+    }
   }
 
   private scheduleReconnect() {
