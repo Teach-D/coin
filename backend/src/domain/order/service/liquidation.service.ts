@@ -52,14 +52,17 @@ export class LiquidationService implements OnModuleInit {
       this.tickerRedisRepository.getLiquidationCandidates(market, OrderDirection.SHORT, currentPrice),
     ]);
 
-    const candidates = [...longCandidates, ...shortCandidates];
+    const candidates = [
+      ...longCandidates.map((id) => ({ positionId: id, direction: OrderDirection.LONG })),
+      ...shortCandidates.map((id) => ({ positionId: id, direction: OrderDirection.SHORT })),
+    ];
 
     if (candidates.length === 0) return;
 
     this.logger.log(`liq-candidates market=${market} candidates=${candidates.length} elapsed=${Date.now() - detectStart}ms`);
 
     await Promise.all(
-      candidates.map((positionId) =>
+      candidates.map(({ positionId, direction }) =>
         this.semaphore.run(async () => {
           const closeStart = Date.now();
           try {
@@ -74,6 +77,7 @@ export class LiquidationService implements OnModuleInit {
             });
           } catch (e) {
             this.logger.error(`forceClose failed positionId=${positionId}`, e);
+            await this.tickerRedisRepository.removeLiquidationIndex(positionId, market, direction).catch(() => {});
           }
         }),
       ),
